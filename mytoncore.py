@@ -1825,7 +1825,6 @@ class MyTonCore():
 
 	def ElectionEntry(self):
 		usePool = local.db.get("usePool")
-		pool = self.GetPool(mode="stake")
 		wallet = self.GetValidatorWallet()
 		addrB64 = wallet.addrB64
 		if wallet is None:
@@ -1833,6 +1832,7 @@ class MyTonCore():
 		#end if
 		
 		if usePool:
+			pool = self.GetPool(mode="stake")
 			addrB64 = pool.addrB64
 		#end if
 
@@ -1956,7 +1956,7 @@ class MyTonCore():
 		
 		local.AddLog("start ReturnStake function", "debug")
 		fullElectorAddr = self.GetFullElectorAddr()
-		returnedStake = self.GetReturnedStake(fullElectorAddr, wallet)
+		returnedStake = self.GetReturnedStake(fullElectorAddr, wallet.addrB64)
 		if returnedStake == 0:
 			local.AddLog("You have nothing on the return stake", "debug")
 			return
@@ -1992,6 +1992,10 @@ class MyTonCore():
 	def PoolUpdateValidatorSet(self, poolAddr, wallet):
 		local.AddLog("start PoolUpdateValidatorSet function", "debug")
 		poolData = self.GetPoolData(poolAddr)
+		if poolData is None:
+			return
+		#en if
+		
 		config34 = self.GetConfig34()
 		fullElectorAddr = self.GetFullElectorAddr()
 		returnedStake = self.GetReturnedStake(fullElectorAddr, poolAddr)
@@ -3406,7 +3410,7 @@ class MyTonCore():
 			workchain, addr = self.ParseAddrFull(inputAddr)
 			return workchain, addr
 		else:
-			raise Exception("ParseInputAddr error: input address is not a adress")
+			raise Exception(f"ParseInputAddr error: input address is not a adress: {inputAddr}")
 	#end define
 
 	def GetNetLoadAvg(self, statistics=None):
