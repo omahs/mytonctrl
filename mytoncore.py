@@ -1683,7 +1683,8 @@ class MyTonCore():
 			raise Exception("Wallet balance is less than requested coins")
 		#end if
 		
-		subwallet = kwargs.get("subwallet", 0)
+		subwalletDefault = 698983191 + wallet.workchain # 0x29A9A317 + workchain
+		subwallet = kwargs.get("subwallet", subwalletDefault)
 		seqno = self.GetSeqno(wallet)
 		resultFilePath = self.tempDir + wallet.name + "_wallet-query"
 		if "v1" in wallet.version:
@@ -2098,7 +2099,11 @@ class MyTonCore():
 		return wallet
 	#end define
 
-	def CreateHighWallet(self, name, subwallet=1, workchain=0, version="hv1"):
+	def CreateHighWallet(self, name, **kwargs):
+		workchain = kwargs.get("workchain", 0)
+		subwalletDefault = 698983191 + workchain # 0x29A9A317 + workchain
+		subwallet = kwargs.get("subwallet", subwalletDefault)
+		version = kwargs.get("version", "hv1")
 		local.AddLog("start CreateHighWallet function", "debug")
 		walletPath = self.walletsDir + name
 		if os.path.isfile(walletPath + ".pk") and os.path.isfile(walletPath + str(subwallet) + ".addr"):
@@ -2223,7 +2228,8 @@ class MyTonCore():
 		local.AddLog("start MoveCoins function", "debug")
 		flags = kwargs.get("flags")
 		wait = kwargs.get("wait", True)
-		subwallet = kwargs.get("subwallet", 0)
+		subwalletDefault = 698983191 + wallet.workchain # 0x29A9A317 + workchain
+		subwallet = kwargs.get("subwallet", subwalletDefault)
 		if coins == "all":
 			mode = 130
 			coins = 0
@@ -3635,7 +3641,12 @@ class MyTonCore():
 		#end if
 	#end define
 	
-	def CreateNominationController(self, name, nominatorAddr, workchain=-1, subwallet=0, rewardShare=0, coverAbility=0):
+	def CreateNominationController(self, name, nominatorAddr, **kwargs):
+		workchain = kwargs.get("workchain", -1)
+		subwalletDefault = 698983191 + workchain # 0x29A9A317 + workchain
+		subwallet = kwargs.get("subwallet", subwalletDefault)
+		rewardShare = kwargs.get("rewardShare", 0)
+		coverAbility = kwargs.get("coverAbility", 0)
 		local.AddLog("start CreateNominationController function", "debug")
 		walletPath = self.walletsDir + name
 		contractPath = self.contractsDir + "nomination-contract/"
@@ -3672,7 +3683,10 @@ class MyTonCore():
 		self.SendFile(resultFilePath, wallet)
 	#end define
 	
-	def CreateRestrictedWallet(self, name, ownerAddr, workchain=0, subwallet=0):
+	def CreateRestrictedWallet(self, name, ownerAddr, **kwargs):
+		workchain = kwargs.get("workchain", 0)
+		subwalletDefault = 698983191 + workchain # 0x29A9A317 + workchain
+		subwallet = kwargs.get("subwallet", subwalletDefault)
 		local.AddLog("start CreateRestrictedWallet function", "debug")
 		walletPath = self.walletsDir + name
 		contractPath = self.contractsDir + "nomination-contract/"
