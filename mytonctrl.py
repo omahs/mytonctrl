@@ -69,9 +69,11 @@ def Init():
 	console.AddItem("isoc", ImportShardOverlayCert, local.Translate("isoc_cmd"))
 	
 	console.AddItem("new_nomination_controller", NewNominationController, local.Translate("new_controller_cmd"))
+	console.AddItem("get_nomination_controller_data", GetNominationControllerData, local.Translate("get_nomination_controller_data_cmd"))
 	console.AddItem("deposit_to_nomination_controller", DepositToNominationController, local.Translate("deposit_to_controller_cmd"))
+	console.AddItem("withdraw_from_nomination_controller", WithdrawFromNominationController, local.Translate("withdraw_from_nomination_controller_cmd"))
+	console.AddItem("request_to_nomination_controller", SendRequestToNominationController, local.Translate("request_to_nomination_controller_cmd"))
 	console.AddItem("new_restricted_wallet", NewRestrictedWallet, local.Translate("new_restricted_wallet_cmd"))
-	console.AddItem("request_from_nomination_controller", RequestFromNominationController, local.Translate("request_from_nomination_controller_cmd"))
 	
 	console.AddItem("new_pool", NewPool, local.Translate("new_pool_cmd"))
 	console.AddItem("pools_list", PrintPoolsList, local.Translate("pools_list_cmd"))
@@ -100,23 +102,46 @@ def Installer(args):
 	subprocess.run(args)
 #end define
 
-def SetArgsByArgs(runArgs, args):
-	if len(args) == 1:
-		buff = args[0]
-		if "https://" in buff:
-			runArgs += ["-r", buff]
+def GetItemFromList(data, index):
+	try:
+		return data[index]
+	except: pass
+#end define
+
+def GetAuthorRepoBranchFromArgs(args):
+	data = dict()
+	arg1 = GetItemFromList(args, 0)
+	arg2 = GetItemFromList(args, 1)
+	if arg1:
+		if "https://" in arg1:
+			buff = arg1[8:].split('/')
+			print(f"buff: {buff}")
+			data["author"] = buff[1]
+			data["repo"] = buff[2]
+			tree = GetItemFromList(buff, 3)
+			if tree:
+				data["branch"] = GetItemFromList(buff, 4)
 		else:
-			runArgs += ["-b", buff]
-	elif len(args) == 2:
-		runArgs += ["-r", args[0]]
-		runArgs += ["-b", args[1]]
-	return runArgs
+			data["branch"] = arg1
+	if arg2:
+		data["branch"] = arg2
+	return data
 #end define
 
 def Update(args):
-	runArgs = ["bash", "/usr/src/mytonctrl/scripts/update.sh"]
-	runArgs = SetArgsByArgs(runArgs, args)
+	# Get author, repo, branch
+	gitPath = "/usr/src/mytonctrl"
+	author, repo = GetGitAuthorAndRepo(gitPath)
+	branch = GetGitBranch(gitPath)
 	
+	# Set author, repo, branch
+	data = GetAuthorRepoBranchFromArgs(args)
+	author = data.get("author", author)
+	repo = data.get("repo", repo)
+	branch = data.get("branch", branch)
+	
+	# Run script
+	runArgs = ["bash", "/usr/src/mytonctrl/scripts/update.sh", "-a", author, "-r", repo, "-b", branch]
 	exitCode = RunAsRoot(runArgs)
 	if exitCode == 0:
 		text = "Update - {green}OK{endc}"
@@ -127,11 +152,20 @@ def Update(args):
 #end define
 
 def Upgrade(args):
-	runArgs = ["bash", "/usr/src/mytonctrl/scripts/upgrade.sh"]
-	runArgs = SetArgsByArgs(runArgs, args)
+	# Get author, repo, branch
+	gitPath = "/usr/src/ton"
+	author, repo = GetGitAuthorAndRepo(gitPath)
+	branch = GetGitBranch(gitPath)
 	
-	exitCode = RunAsRoot(["python3", "/usr/src/mytonctrl/scripts/upgrade.py"])
-	exitCode += RunAsRoot(runArgs)
+	# Set author, repo, branch
+	data = GetAuthorRepoBranchFromArgs(args)
+	author = data.get("author", author)
+	repo = data.get("repo", repo)
+	branch = data.get("branch", branch)
+	
+	# Run script
+	runArgs = ["bash", "/usr/src/mytonctrl/scripts/upgrade.sh", "-a", author, "-r", repo, "-b", branch]
+	exitCode = RunAsRoot(runArgs)
 	if exitCode == 0:
 		text = "Upgrade - {green}OK{endc}"
 	else:
@@ -581,17 +615,17 @@ def DeleteWallet(args):
 
 def ViewAccountStatus(args):
 	try:
-		addr = args[0]
+		addrB64 = args[0]
 	except:
 		ColorPrint("{red}Bad args. Usage:{endc} vas <account-addr>")
 		return
-	addr = ton.GetDestinationAddr(addr)
-	account = ton.GetAccount(addr)
+	addrB64 = ton.GetDestinationAddr(addrB64)
+	account = ton.GetAccount(addrB64)
 	version = ton.GetWalletVersionFromHash(account.codeHash)
 	statusTable = list()
 	statusTable += [["Address", "Status", "Version", "Balance"]]
-	statusTable += [[addr, account.status, version, account.balance]]
-	historyTable = GetHistoryTable(addr, 10)
+	statusTable += [[addrB64, account.status, version, account.balance]]
+	historyTable = GetHistoryTable(addrB64, 10)
 	PrintTable(statusTable)
 	print()
 	PrintTable(historyTable)
@@ -1041,6 +1075,17 @@ def NewNominationController(args):
 	ColorPrint("NewNominationController - {green}OK{endc}")
 #end define
 
+def GetNominationControllerData(args):
+	try:
+		addrB64 = args[0]
+	except:
+		ColorPrint("{red}Bad args. Usage:{endc} get_nomination_controller_data <controller-name | controller-addr>")
+		return
+	addrB64 = ton.GetDestinationAddr(addrB64)
+	controllerData = ton.GetControllerData(addrB64)
+	print(json.dumps(controllerData, indent=4))
+#end define
+
 def DepositToNominationController(args):
 	try:
 		walletName = args[0]
@@ -1054,17 +1099,29 @@ def DepositToNominationController(args):
 	ColorPrint("DepositToNominationController - {green}OK{endc}")
 #end define
 
-def RequestFromNominationController(args):
+def WithdrawFromNominationController(args):
 	try:
 		walletName = args[0]
 		destination = args[1]
 		amount = args[2]
 	except:
-		ColorPrint("{red}Bad args. Usage:{endc} request_from_nomination_controller <wallet-name> <controller-addr> <amount>")
+		ColorPrint("{red}Bad args. Usage:{endc} withdraw_from_nomination_controller <wallet-name> <controller-addr> <amount>")
 		return
 	destination = ton.GetDestinationAddr(destination)
-	ton.RequestFromNominationController(walletName, destination, amount)
-	ColorPrint("RequestFromNominationController - {green}OK{endc}")
+	ton.WithdrawFromNominationController(walletName, destination, amount)
+	ColorPrint("WithdrawFromNominationController - {green}OK{endc}")
+#end define
+
+def SendRequestToNominationController(args):
+	try:
+		walletName = args[0]
+		destination = args[1]
+	except:
+		ColorPrint("{red}Bad args. Usage:{endc} request_to_nomination_controller <wallet-name> <controller-addr>")
+		return
+	destination = ton.GetDestinationAddr(destination)
+	ton.SendRequestToNominationController(walletName, destination)
+	ColorPrint("SendRequestToNominationController - {green}OK{endc}")
 #end define
 
 def NewRestrictedWallet(args):

@@ -1906,7 +1906,7 @@ class MyTonCore():
 			validatorPubkey, resultFilePath = self.SignElectionRequestWithPoolWithValidator(pool, startWorkTime, adnlAddr, validatorPubkey_b64, validatorSignature, maxFactor, stake)
 			
 			# Send boc file to TON
-			resultFilePath = self.SignBocWithWallet(wallet, resultFilePath, pool.addrB64, 1.1)
+			resultFilePath = self.SignBocWithWallet(wallet, resultFilePath, pool.addrB64, 1.3)
 			self.SendFile(resultFilePath, wallet)
 		else:
 			var1 = self.CreateElectionRequest(wallet, startWorkTime, adnlAddr, maxFactor)
@@ -2012,16 +2012,17 @@ class MyTonCore():
 			if (poolData["validator_set_changes_count"] >= 2 and
 				timeNow - config34["startWorkTime"] > config15["stakeHeldFor"]):
 				self.ReturnStakeWithPool(poolAddr)
+				self.PoolWithdrawRequests()
 	#end define
 	
 	def PoolProcessUpdateValidatorSet(self, poolAddr, wallet):
 		local.AddLog("start PoolProcessUpdateValidatorSet function", "debug")
-		resultFilePath = self.tempDir + "pool-withdraw-requests-query.boc"
+		resultFilePath = self.tempDir + "pool-update-validator-set-query.boc"
 		fiftScript = self.contractsDir + "nominator-pool/func/update-validator-set.fif"
 		args = [fiftScript, resultFilePath]
 		result = self.fift.Run(args)
 		resultFilePath = Pars(result, "Saved to file ", '\n')
-		resultFilePath = self.SignBocWithWallet(wallet, resultFilePath, poolAddr, 1)
+		resultFilePath = self.SignBocWithWallet(wallet, resultFilePath, poolAddr, 1.1)
 		self.SendFile(resultFilePath, wallet)
 		local.AddLog("PoolProcessUpdateValidatorSet completed")
 	#end define
@@ -2042,7 +2043,7 @@ class MyTonCore():
 	def PoolProcessWihtdrawRequests(self):
 		local.AddLog("start PoolProcessWihtdrawRequests function", "debug")
 		resultFilePath = self.tempDir + "pool-withdraw-requests-query.boc"
-		fiftScript = self.contractsDir + "nominator-pool/func/process-wihtdraw-requests.fif"
+		fiftScript = self.contractsDir + "nominator-pool/func/process-withdraw-requests.fif"
 		args = [fiftScript, resultFilePath]
 		result = self.fift.Run(args)
 		resultFilePath = Pars(result, "Saved to file ", '\n')
@@ -3042,6 +3043,8 @@ class MyTonCore():
 		arrLen = len(arr)
 		for i in range(arrLen):
 			item = arr[i]
+			if '{' in item or '}' in item:
+				item = f"\"{item}\""
 			# get next item
 			if i+1 < arrLen:
 				nextItem = arr[i+1]
@@ -3052,13 +3055,12 @@ class MyTonCore():
 				output += item
 			elif nextItem == ']':
 				output += item
-			elif '{' in item or '}' in item:
-				output += "\"{item}\", ".format(item=item)
 			elif i+1 == arrLen:
 				output += item
 			else:
 				output += item + ', '
 		#end for
+
 		data = json.loads(output)
 		return data
 	#end define
@@ -3657,7 +3659,6 @@ class MyTonCore():
 		fiftScript = contractPath + "scripts/new-nomination-controller.fif"
 		args = [fiftScript, workchain, subwallet, nominatorAddr, rewardShare, coverAbility, walletPath]
 		result = self.fift.Run(args)
-		print("result:", result)
 		version = "v3r3"
 		wallet = self.GetLocalWallet(name, version)
 		self.SetWalletVersion(wallet.addrB64, version)
@@ -3670,16 +3671,21 @@ class MyTonCore():
 		self.SendFile(resultFilePath, wallet)
 	#end define
 	
-	def RequestFromNominationController(self, walletName, destAddr, amount):
+	def WithdrawFromNominationController(self, walletName, destAddr, amount):
 		wallet = self.GetLocalWallet(walletName)
-		fiftScript = self.contractsDir + "nomination-contract/scripts/request-stake.fif"
-		bocPath = self.contractsDir + "nomination-contract/scripts/request-stake"
+		fiftScript = self.contractsDir + "nomination-contract/scripts/request-stake.fif" # withdraw-stake.fif
+		bocPath = self.contractsDir + "nomination-contract/scripts/withdraw-stake"
 		args = [fiftScript, amount, bocPath]
-		print("args:", args)
 		result = self.fift.Run(args)
 		bocPath = Pars(result, "Saved to file ", ")")
-		print("result:", result)
 		resultFilePath = self.SignBocWithWallet(wallet, bocPath, destAddr, 1)
+		self.SendFile(resultFilePath, wallet)
+	#end define
+	
+	def SendRequestToNominationController(self, walletName, destAddr):
+		wallet = self.GetLocalWallet(walletName)
+		bocPath = self.contractsDir + "nomination-contract/scripts/elector-refund.boc"
+		resultFilePath = self.SignBocWithWallet(wallet, bocPath, destAddr, 1.5)
 		self.SendFile(resultFilePath, wallet)
 	#end define
 	
@@ -3697,7 +3703,6 @@ class MyTonCore():
 		fiftScript = contractPath + "scripts/new-restricted-wallet.fif"
 		args = [fiftScript, workchain, subwallet, ownerAddr, walletPath]
 		result = self.fift.Run(args)
-		print("result:", result)
 		version = "v3r4"
 		wallet = self.GetLocalWallet(name, version)
 		self.SetWalletVersion(wallet.addrB64, version)
@@ -3777,27 +3782,34 @@ class MyTonCore():
 		return resultFilePath
 	#end define
 	
-	def GetControllerData(self, controller):
+	def GetControllerData(self, addrB64):
 		local.AddLog("start GetControllerData function", "debug")
-		addr = controller.get("addr")
-		account = self.GetAccount(addr)
+		account = self.GetAccount(addrB64)
 		if account.status != "active":
 			return
-		cmd = "runmethodfull {addr} get_pool_data".format(addr=addr)
+		cmd = "runmethodfull {addrB64} all_data".format(addrB64=addrB64)
 		result = self.liteClient.Run(cmd)
 		data = self.Result2List(result)
-		result = dict()
-		result["vwc"] = data[0]
-		result["vaddr_hash"] = data[1]
-		result["nwc"] = data[2]
-		result["naddr_hash"] = data[3]
-		result["val_balance"] = data[4]
-		result["nom_balance"] = data[5]
-		result["val_request"] = data[6]
-		result["nom_request"] = data[7]
-		result["validator_reward_share"] = data[8]
-		result["validator_cover_ability"] = data[9]
-		controller["data"] = result
+		controllerData = dict()
+		wallet_data = dict()
+		wallet_data["seqno"] = data[0][0]
+		wallet_data["subwallet_id"] = data[0][1]
+		wallet_data["controller_pubkey"] = data[0][2]
+		wallet_data["last_used"] = data[0][3]
+		static_data = dict()
+		static_data["nominator_address"] = data[1][0]
+		static_data["controller_reward_share"] = data[1][1]
+		static_data["controller_cover_ability"] = data[1][2]
+		balances = dict()
+		balances["nominator_total_balance"] = data[2][0]
+		balances["nominator_elector_balance"] = data[2][1]
+		balances["nominator_withdrawal_request"] = data[2][2]
+		balances["total_stake_on_elector"] = data[2][3]
+		controllerData["wallet_data"] = wallet_data
+		controllerData["static_data"] = static_data
+		controllerData["balances"] = balances
+		controllerData["last_sent_stake_time"] = data[3]
+		return controllerData
 	#end define
 	
 	def GetLocalPool(self, poolName):
@@ -3936,11 +3948,14 @@ class TonBlocksScanner():
 		self.local = kwargs.get("local")
 		self.sync = kwargs.get("sync", False)
 		self.delay = 0
+		self.working = False
+		self.closing = False
 	#end define
 	
 	def Run(self):
 		self.StartThread(self.ScanBlocks, args=())
 		self.StartThread(self.ThreadBalancing, args=())
+		self.StartThread(self.StatusReading, args=())
 	#end define
 	
 	def StartThread(self, func, args):
@@ -3978,7 +3993,7 @@ class TonBlocksScanner():
 		if workchainType != int:
 			raise Exception(f"SetStartBlock error: workchain type mast be int, not {workchainType}")
 		if shardchainType != str:
-			raise Exception(f"SetStartBlock error: shardchain type mast be int, not {shardchainType}")
+			raise Exception(f"SetStartBlock error: shardchain type mast be str, not {shardchainType}")
 		if seqnoType != int:
 			raise Exception(f"SetStartBlock error: seqno type mast be int, not {seqnoType}")
 		#end if
@@ -4007,19 +4022,40 @@ class TonBlocksScanner():
 				self.delay -= 0.01
 			if self.delay < 0:
 				self.delay = 0
+			if self.closing is True:
+				exit()
 			time.sleep(0.1)
+	#end define
+	
+	def StatusReading(self):
+		while True:
+			validatorStatus = self.ton.GetValidatorStatus()
+			validatorOutOfSync = validatorStatus.get("outOfSync")
+			if self.ton.liteClient.pubkeyPath is None:
+				self.working = False
+				self.closing = True
+				text = "TonBlocksScanner error: local liteserver is not configured, stop thread."
+				self.local.AddLog(text, "error")
+				exit()
+			if validatorOutOfSync > 20:
+				self.working = False
+				text = f"TonBlocksScanner warning: local liteserver is out of sync: {validatorOutOfSync}."
+				self.local.AddLog(text, "warning")
+			else:
+				self.working = True
+			time.sleep(10)
 	#end define
 	
 	def ScanBlocks(self):
 		while True:
-			self.ScanBlock()
+			if self.working is True:
+				self.ScanBlock()
+			if self.closing is True:
+				exit()
 			time.sleep(1)
 	#end define
 	
 	def ScanBlock(self):
-		if self.ton.liteClient.pubkeyPath is None:
-			raise Exception("ScanBlocks error: local liteserver is not configured, stop thread")
-			exit()
 		block = self.Try(self.ton.GetLastBlock)
 		self.StartThread(self.SearchMissBlocks, args=(block, self.prevMasterBlock))
 		if block != self.prevMasterBlock:
@@ -4159,7 +4195,6 @@ def Elections(ton):
 	usePool = local.db.get("usePool")
 	if usePool == True:
 		ton.PoolsUpdateValidatorSet()
-		ton.PoolWithdrawRequests()
 		ton.ElectionEntry()
 	else:
 		ton.ReturnStake()
