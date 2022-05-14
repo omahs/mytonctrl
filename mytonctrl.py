@@ -706,7 +706,12 @@ def CreatNewBookmark(args):
 	except:
 		ColorPrint("{red}Bad args. Usage:{endc} nb <bookmark-name> <account-addr | domain-name>")
 		return
-	type = ton.GetStrType(addr)
+	if ton.IsAddr(addr):
+		type = "account"
+	else:
+		type = "domain"
+	#end if
+	
 	bookmark = dict()
 	bookmark["name"] = name
 	bookmark["type"] = type

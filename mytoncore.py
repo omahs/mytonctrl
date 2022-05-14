@@ -95,25 +95,6 @@ class Fift:
 	#end define
 #end class
 
-class Miner:
-	def __init__(self):
-		self.appPath = None
-	#end define
-
-	def Run(self, args):
-		for i in range(len(args)):
-			args[i] = str(args[i])
-		args = [self.appPath] + args
-		process = subprocess.run(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		output = process.stdout.decode("utf-8")
-		err = process.stderr.decode("utf-8")
-		# if len(err) > 0:
-		# 	local.AddLog("args: {args}".format(args=args), "error")
-		# 	raise Exception("Miner error: {err}".format(err=err))
-		return err
-	#end define
-#end class
-
 class Wallet:
 	def __init__(self, name, path, version):
 		self.name = name
@@ -292,7 +273,6 @@ class MyTonCore():
 		self.liteClient = LiteClient()
 		self.validatorConsole = ValidatorConsole()
 		self.fift = Fift()
-		self.miner = Miner()
 
 		self.Refresh()
 		self.Init()
@@ -336,13 +316,6 @@ class MyTonCore():
 			self.fift.appPath = fift["appPath"]
 			self.fift.libsPath = fift["libsPath"]
 			self.fift.smartcontsPath = fift["smartcontsPath"]
-		#end if
-
-		miner = local.db.get("miner")
-		if miner is not None:
-			self.miner.appPath = miner["appPath"]
-			# set powAddr "kf8guqdIbY6kpMykR8WFeVGbZcP2iuBagXfnQuq0rGrxgE04"
-			# set minerAddr "kQAXRfNYUkFtecUg91zvbUkpy897CDcE2okhFxAlOLcM3_XD"
 		#end if
 
 		# Check config file
@@ -454,152 +427,6 @@ class MyTonCore():
 		codeBytes = bytes.fromhex(code)
 		codeHash = hashlib.sha256(codeBytes).hexdigest()
 		return codeHash
-	#end define
-
-	def GetAccountHistory_old(self, account, limit):
-		local.AddLog("start GetAccountHistory_old function", "debug")
-		lt=account.lt
-		hash=account.hash
-		history = list()
-		ready = 0
-		while True:
-			cmd = "lasttrans {addr} {lt} {hash}".format(addr=account.addr, lt=lt, hash=hash)
-			result = self.liteClient.Run(cmd)
-			buff =  Pars(result, "previous transaction has", '\n')
-			lt = Pars(buff, "lt ", ' ')
-			hash = Pars(buff, "hash ", ' ')
-			arr = result.split("transaction #0")
-			for item in arr:
-				ready += 1
-				if "from block" not in item:
-					continue
-				if "VALUE:" not in item:
-					continue
-				block = Pars(item, "from block ", '\n')
-				time = Pars(item, "time=", ' ')
-				time = int(time)
-				outmsg = Pars(item, "outmsg_cnt=", '\n')
-				outmsg = int(outmsg)
-				if outmsg == 1:
-					item = Pars(item, "outbound message")
-				buff = dict()
-				buff["block"] = block
-				buff["time"] = time
-				buff["outmsg"] = outmsg
-				buff["from"] = Pars(item, "FROM: ", ' ').lower()
-				buff["to"] = Pars(item, "TO: ", ' ').lower()
-				value = Pars(item, "VALUE:", '\n')
-				if '+' in value: # wtf?
-					value = value[:value.find('+')] # wtf? `-1:0000000000000000000000000000000000000000000000000000000000000000 1583059577 1200000000+extra`
-				buff["value"] = ng2g(value)
-				history.append(buff)
-			if lt is None or ready >= limit:
-				return history
-	#end define
-	
-	def GetAccountHistory_old2(self, account, limit):
-		local.AddLog("start GetAccountHistory_old2 function", "debug")
-		lt=account.lt
-		hash=account.hash
-		history = list()
-		ready = 0
-		while True:
-			cmd = "lasttransdump {addr} {lt} {hash}".format(addr=account.addr, lt=lt, hash=hash)
-			result = self.liteClient.Run(cmd)
-			buff =  Pars(result, "previous transaction has", '\n')
-			lt = Pars(buff, "lt ", ' ')
-			hash = Pars(buff, "hash ", ' ')
-			arr = result.split("transaction #")
-			for item in arr:
-				ready += 1
-				if "from block" not in item:
-					continue
-				if "VALUE:" not in item:
-					continue
-				block = Pars(item, "from block ", ' ')
-				time = Pars(item, "time=", ' ')
-				time = int(time)
-				outmsg = Pars(item, "outmsg_cnt=", '\n')
-				outmsg = int(outmsg)
-				if outmsg == 1:
-					item = Pars(item, "outbound message")
-				#end if
-				
-				in_msg = self.GetVarFromWorkerOutput(result, "in_msg")
-				ihr_disabled = Pars(in_msg, "ihr_disabled:", ' ')
-				bounce = Pars(in_msg, "bounce:", ' ')
-				bounced = Pars(in_msg, "bounced:", '\n')
-				src_buff = self.GetVarFromWorkerOutput(in_msg, "src")
-				src_buff2 = self.GetVarFromWorkerOutput(src_buff, "address")
-				src = xhex2hex(src_buff2)
-				dest_buff = self.GetVarFromWorkerOutput(in_msg, "dest")
-				dest_buff2 = self.GetVarFromWorkerOutput(dest_buff, "address")
-				dest = xhex2hex(dest_buff2)
-				value_buff = self.GetVarFromWorkerOutput(in_msg, "value")
-				grams_buff = self.GetVarFromWorkerOutput(value_buff, "grams")
-				ngrams = self.GetVarFromWorkerOutput(grams_buff, "value")
-				if ngrams is None:
-					grams = None
-				else:
-					grams = ng2g(ngrams)
-				ihr_fee_buff = self.GetVarFromWorkerOutput(in_msg, "ihr_fee")
-				ihr_fee = self.GetVarFromWorkerOutput(ihr_fee_buff, "value")
-				fwd_fee_buff = self.GetVarFromWorkerOutput(in_msg, "fwd_fee")
-				fwd_fee = self.GetVarFromWorkerOutput(fwd_fee_buff, "value")
-				body_buff = self.GetVarFromWorkerOutput(in_msg, "body")
-				body_buff2 = self.GetVarFromWorkerOutput(body_buff, "value")
-				body = self.GetBody(body_buff2)
-				comment = self.GetComment(body)
-
-				total_fees_buff = self.GetVarFromWorkerOutput(result, "total_fees")
-				total_fees = self.GetVarFromWorkerOutput(total_fees_buff, "value")
-				storage_ph_buff = self.GetVarFromWorkerOutput(result, "storage_ph")
-				storage_ph_buff2 = self.GetVarFromWorkerOutput(storage_ph_buff, "value")
-				storage_ph = self.GetVarFromWorkerOutput(storage_ph_buff2, "value")
-				credit_ph_buff = self.GetVarFromWorkerOutput(result, "credit_ph")
-				credit_ph_buff2 = self.GetVarFromWorkerOutput(credit_ph_buff, "value")
-				credit_ph = self.GetVarFromWorkerOutput(credit_ph_buff2, "value")
-				compute_ph = self.GetVarFromWorkerOutput(result, "compute_ph")
-				gas_fees_buff = self.GetVarFromWorkerOutput(compute_ph, "gas_fees")
-				gas_fees = self.GetVarFromWorkerOutput(gas_fees_buff, "value")
-				gas_used_buff = self.GetVarFromWorkerOutput(compute_ph, "gas_used")
-				gas_used = self.GetVarFromWorkerOutput(gas_used_buff, "value")
-				gas_limit_buff = self.GetVarFromWorkerOutput(compute_ph, "gas_limit")
-				gas_limit = self.GetVarFromWorkerOutput(gas_limit_buff, "value")
-				vm_init_state_hash_buff = Pars(result, "vm_init_state_hash:", ' ')
-				vm_init_state_hash = xhex2hex(vm_init_state_hash_buff)
-				vm_final_state_hash_buff = Pars(result, "vm_final_state_hash:", ')')
-				vm_final_state_hash = xhex2hex(vm_final_state_hash_buff)
-				action_list_hash_buff = Pars(result, "action_list_hash:", '\n')
-				action_list_hash = xhex2hex(action_list_hash_buff)
-				output = dict()
-				output["block"] = block
-				output["time"] = time
-				output["outmsg"] = outmsg
-				output["from"] = Pars(item, "FROM: ", ' ').lower()
-				output["to"] = Pars(item, "TO: ", ' ').lower()
-				output["ihr_disabled"] = ihr_disabled
-				output["bounce"] = bounce
-				output["bounced"] = bounced
-				output["src"] = src
-				output["dest"] = dest
-				output["grams"] = grams
-				output["body"] = body
-				output["comment"] = comment
-				output["ihr_fee"] = ihr_fee
-				output["fwd_fee"] = fwd_fee
-				output["total_fees"] = total_fees
-				output["storage_ph"] = storage_ph
-				output["credit_ph"] = credit_ph
-				output["gas_used"] = gas_used
-				output["vm_init_state_hash"] = vm_init_state_hash
-				output["vm_final_state_hash"] = vm_final_state_hash
-				output["action_list_hash"] = action_list_hash
-				value = Pars(item, "VALUE:", '\n')
-				output["value"] = ng2g(value)
-				history.append(output)
-			if lt is None or ready >= limit:
-				return history
 	#end define
 	
 	def GetAccountHistory(self, account, limit):
@@ -719,6 +546,7 @@ class MyTonCore():
 			"outbound message" in key):
 				result.append(item)
 		#end for
+		result.reverse()
 		return result
 	#end define
 	
@@ -873,14 +701,6 @@ class MyTonCore():
 	#end define
 
 	def AddrFile2Object(self, object):
-		#args = ["show-addr.fif", filePath]
-		#result = self.fift.Run(args)
-		#object.addrFull = Pars(result, "Source wallet address = ", '\n').replace(' ', '')
-		#buff = self.GetVarFromWorkerOutput(result, "Bounceable address (for later access)")
-		#object.addrB64 = buff.replace(' ', '')
-		#buff = self.GetVarFromWorkerOutput(result, "Non-bounceable address (for init only)")
-		#object.addrB64_init = buff.replace(' ', '')
-
 		file = open(object.addrFilePath, "rb")
 		data = file.read()
 		object.addr = data[:32].hex()
@@ -900,7 +720,7 @@ class MyTonCore():
 		if version is None:
 			version = self.GetWalletVersionFromHash(account.codeHash)
 		if version is None:
-			local.AddLog("Wallet version not found: " + wallet.addrB64, "error")
+			local.AddLog("Wallet version not found: " + wallet.addrB64, "warning")
 			return
 		#end if
 		
@@ -1063,9 +883,9 @@ class MyTonCore():
 
 	def GetRootWorkchainEnabledTime(self):
 		local.AddLog("start GetRootWorkchainEnabledTime function", "debug")
-		config12 = self.GetConfig12()
-		result = config12["workchains"]["root"]["enabledSince"]
-		return result
+		config12 = self.GetConfig(12)
+		enabledTime = config12["workchains"]["root"]["node"]["value"]["enabled_since"]
+		return enabledTime
 	#end define
 
 	def GetTotalValidators(self):
@@ -1316,58 +1136,6 @@ class MyTonCore():
 		return data
 	#end define
 
-	def GetConfig12_old(self):
-		# get buffer
-		timestamp = GetTimestamp()
-		config12 = local.buffer.get("config12")
-		if config12:
-			diffTime = timestamp - config12.get("timestamp")
-			if diffTime < 60:
-				return config12
-		#end if
-
-		local.AddLog("start GetConfig12 function", "debug")
-		config12 = dict()
-		config12["timestamp"] = timestamp
-		config12["workchains"] = dict()
-		config12["workchains"]["root"] = dict()
-		result = self.liteClient.Run("getconfig 12")
-		workchains = self.GetVarFromWorkerOutput(result, "workchains")
-		workchain_root = self.GetVarFromWorkerOutput(workchains, "root")
-		config12["workchains"]["root"]["enabledSince"] = int(Pars(workchain_root, "enabled_since:", ' '))
-		local.buffer["config12"] = config12 # set buffer
-		return config12
-	#end define
-
-	def GetConfig12(self):
-		config = self.GetConfig(12)
-		enabled_since = config["workchains"]["root"]["node"]["value"]["enabled_since"]
-		config12 = {"workchains": {"root": {"enabledSince": enabled_since}}}
-		return config12
-	#end define
-
-	def GetConfig15_old(self):
-		# get buffer
-		timestamp = GetTimestamp()
-		config15 = local.buffer.get("config15")
-		if config15:
-			diffTime = timestamp - config15.get("timestamp")
-			if diffTime < 60:
-				return config15
-		#end if
-
-		local.AddLog("start GetConfig15 function", "debug")
-		config15 = dict()
-		config15["timestamp"] = timestamp
-		result = self.liteClient.Run("getconfig 15")
-		config15["validatorsElectedFor"] = int(Pars(result, "validators_elected_for:", ' '))
-		config15["electionsStartBefore"] = int(Pars(result, "elections_start_before:", ' '))
-		config15["electionsEndBefore"] = int(Pars(result, "elections_end_before:", ' '))
-		config15["stakeHeldFor"] = int(Pars(result, "stake_held_for:", ')'))
-		local.buffer["config15"] = config15 # set buffer
-		return config15
-	#end define
-
 	def GetConfig15(self):
 		config = self.GetConfig(15)
 		config15 = dict()
@@ -1376,32 +1144,6 @@ class MyTonCore():
 		config15["electionsEndBefore"] = config["elections_end_before"]
 		config15["stakeHeldFor"] = config["stake_held_for"]
 		return config15
-	#end define
-
-	def GetConfig17_old(self):
-		# get buffer
-		timestamp = GetTimestamp()
-		config17 = local.buffer.get("config17")
-		if config17:
-			diffTime = timestamp - config17.get("timestamp")
-			if diffTime < 60:
-				return config17
-		#end if
-
-		local.AddLog("start GetConfig17 function", "debug")
-		config17 = dict()
-		config17["timestamp"] = timestamp
-		result = self.liteClient.Run("getconfig 17")
-		minStake = self.GetVarFromWorkerOutput(result, "min_stake")
-		minStake = self.GetVarFromWorkerOutput(minStake, "value")
-		config17["minStake"] = ng2g(minStake)
-		maxStake = self.GetVarFromWorkerOutput(result, "max_stake")
-		maxStake = self.GetVarFromWorkerOutput(maxStake, "value")
-		config17["maxStake"] = ng2g(maxStake)
-		maxStakeFactor = self.GetVarFromWorkerOutput(result, "max_stake_factor")
-		config17["maxStakeFactor"] = int(maxStakeFactor)
-		local.buffer["config17"] = config17 # set buffer
-		return config17
 	#end define
 
 	def GetConfig17(self):
@@ -1703,30 +1445,31 @@ class MyTonCore():
 
 	def SendFile(self, filePath, wallet=None, **kwargs):
 		local.AddLog("start SendFile function: " + filePath, "debug")
-		wait = kwargs.get("wait", True)
+		timeout = kwargs.get("timeout", 30)
 		duplicateSendfile = local.db.get("duplicateSendfile", True)
 		if not os.path.isfile(filePath):
 			raise Exception("SendFile error: no such file '{filePath}'".format(filePath=filePath))
-		if wait and wallet:
+		if timeout and wallet:
 			wallet.oldseqno = self.GetSeqno(wallet)
 		self.liteClient.Run("sendfile " + filePath)
 		if duplicateSendfile:
 			self.liteClient.Run("sendfile " + filePath, useLocalLiteServer=False)
 			self.liteClient.Run("sendfile " + filePath, useLocalLiteServer=False)
-		if wait and wallet:
-			self.WaitTransaction(wallet)
+		if timeout and wallet:
+			self.WaitTransaction(wallet, timeout)
 		os.remove(filePath)
 	#end define
 
-	def WaitTransaction(self, wallet, ex=True):
+	def WaitTransaction(self, wallet, timeout=30):
 		local.AddLog("start WaitTransaction function", "debug")
-		for i in range(10): # wait 30 sec
-			time.sleep(3)
+		timesleep = 3
+		steps = timeout // timesleep
+		for i in range(steps):
+			time.sleep(timesleep)
 			seqno = self.GetSeqno(wallet)
 			if seqno != wallet.oldseqno:
 				return
-		if ex:
-			raise Exception("WaitTransaction error: time out")
+		raise Exception("WaitTransaction error: time out")
 	#end define
 
 	def GetReturnedStake(self, fullElectorAddr, inputAddr):
@@ -1987,16 +1730,19 @@ class MyTonCore():
 		wallet = self.GetValidatorWallet()
 		pools = self.GetPools()
 		for pool in pools:
-			self.PoolUpdateValidatorSet(pool.addrB64, wallet)
+			self.PoolUpdateValidatorSet(pool, wallet)
 	#end define
 	
-	def PoolUpdateValidatorSet(self, poolAddr, wallet):
+	def PoolUpdateValidatorSet(self, pool, wallet):
 		local.AddLog("start PoolUpdateValidatorSet function", "debug")
+		poolAddr = pool.addrB64
 		poolData = self.GetPoolData(poolAddr)
 		if poolData is None:
 			return
 		#en if
 		
+		timeNow = int(time.time())
+		config15 = self.GetConfig15()
 		config34 = self.GetConfig34()
 		fullElectorAddr = self.GetFullElectorAddr()
 		returnedStake = self.GetReturnedStake(fullElectorAddr, poolAddr)
@@ -2006,13 +1752,10 @@ class MyTonCore():
 			self.PoolProcessUpdateValidatorSet(poolAddr, wallet)
 		if (returnedStake > 0 and
 			poolData["state"] == 2 and
-			poolData["validator_set_changes_count"] >= 2):
-			config15 = self.GetConfig15()
-			timeNow = int(time.time())
-			if (poolData["validator_set_changes_count"] >= 2 and
-				timeNow - config34["startWorkTime"] > config15["stakeHeldFor"]):
-				self.ReturnStakeWithPool(poolAddr)
-				self.PoolWithdrawRequests()
+			poolData["validator_set_changes_count"] >= 2 and
+			timeNow - config34["startWorkTime"] > config15["stakeHeldFor"]):
+			self.ReturnStakeWithPool(poolAddr)
+		self.PoolWithdrawRequests(pool, wallet, poolData)
 	#end define
 	
 	def PoolProcessUpdateValidatorSet(self, poolAddr, wallet):
@@ -2027,11 +1770,9 @@ class MyTonCore():
 		local.AddLog("PoolProcessUpdateValidatorSet completed")
 	#end define
 	
-	def PoolWithdrawRequests(self):
-		pool = self.GetPool(mode="stake")
-		wallet = self.GetValidatorWallet()
+	def PoolWithdrawRequests(self, pool, wallet, poolData):
 		local.AddLog("start PoolWithdrawRequests function", "debug")
-		while self.HasPoolWithdrawRequests(pool):
+		while (poolData["state"] == 0 and self.HasPoolWithdrawRequests(pool)):
 			resultFilePath = self.PoolProcessWihtdrawRequests()
 			resultFilePath = self.SignBocWithWallet(wallet, resultFilePath, pool.addrB64, 10)
 			self.SendFile(resultFilePath, wallet)
@@ -2076,10 +1817,12 @@ class MyTonCore():
 		file.close()
 	#ned define
 
-	def CreateWallet(self, name, workchain=0, version="v1", subwallet=None):
+	def CreateWallet(self, name, workchain=0, version="v1", **kwargs):
 		local.AddLog("start CreateWallet function", "debug")
+		subwalletDefault = 698983191 + workchain # 0x29A9A317 + workchain
+		subwallet = kwargs.get("subwallet", subwalletDefault)
 		walletPath = self.walletsDir + name
-		if os.path.isfile(walletPath + ".pk") and subwallet is None:
+		if os.path.isfile(walletPath + ".pk") and "v3" not in version:
 			local.AddLog("CreateWallet error: Wallet already exists: " + name, "warning")
 		else:
 			if "v1" in version:
@@ -2120,16 +1863,24 @@ class MyTonCore():
 		return hwallet
 	#end define
 
-	def ActivateWallet(self, wallet, ex=True):
+	def ActivateWallet(self, wallet):
 		local.AddLog("start ActivateWallet function", "debug")
-		for i in range(10):
-			time.sleep(3)
-			account = self.GetAccount(wallet.addrB64)
-			if account.balance > 0:
-				self.SendFile(wallet.bocFilePath, wallet)
-				return
-		if ex:
-			raise Exception("ActivateWallet error: time out")
+		account = self.GetAccount(wallet.addrB64)
+		if account.status == "empty":
+			local.AddLog("ActivateWallet error: account status is empty", "warning")
+			return
+		elif account.status == "active":
+			local.AddLog("ActivateWallet error: account status is active", "warning")
+			return
+		else:
+			self.SendFile(wallet.bocFilePath, wallet)
+			return
+		#for i in range(10):
+		#	time.sleep(3)
+		#	if account.balance > 0:
+		#		self.SendFile(wallet.bocFilePath, wallet)
+		#		return
+		#raise Exception("ActivateWallet error: time out")
 	#end define
 	
 	def ImportWallet(self, addrB64, key):
@@ -2228,7 +1979,7 @@ class MyTonCore():
 	def MoveCoins(self, wallet, dest, coins, **kwargs):
 		local.AddLog("start MoveCoins function", "debug")
 		flags = kwargs.get("flags")
-		wait = kwargs.get("wait", True)
+		timeout = kwargs.get("timeout", 30)
 		subwalletDefault = 698983191 + wallet.workchain # 0x29A9A317 + workchain
 		subwallet = kwargs.get("subwallet", subwalletDefault)
 		if coins == "all":
@@ -2262,7 +2013,7 @@ class MyTonCore():
 			args += flags
 		result = self.fift.Run(args)
 		savedFilePath = Pars(result, "Saved to file ", ")")
-		self.SendFile(savedFilePath, wallet, wait=wait)
+		self.SendFile(savedFilePath, wallet, timeout=timeout)
 	#end define
 
 	def MoveCoinsThroughProxy(self, wallet, dest, coins):
@@ -2281,7 +2032,7 @@ class MyTonCore():
 	def MoveCoinsFromHW(self, wallet, destList, **kwargs):
 		local.AddLog("start MoveCoinsFromHW function", "debug")
 		flags = kwargs.get("flags")
-		wait = kwargs.get("wait", True)
+		timeout = kwargs.get("timeout", 30)
 
 		if len(destList) == 0:
 			local.AddLog("MoveCoinsFromHW warning: destList is empty, break function", "warning")
@@ -2308,7 +2059,7 @@ class MyTonCore():
 			args += flags
 		result = self.fift.Run(args)
 		savedFilePath = Pars(result, "Saved to file ", ")")
-		self.SendFile(savedFilePath, wallet, wait=wait)
+		self.SendFile(savedFilePath, wallet, timeout=timeout)
 	#end define
 
 	def GetValidatorKey(self):
@@ -3327,35 +3078,21 @@ class MyTonCore():
 			local.dbSave()
 	#end define
 
-	def GetStrType(self, inputStr):
-		if type(inputStr) is not str:
-			result = None
-		elif len(inputStr) == 48 and '.' not in inputStr:
-			result = "account"
-		elif ':' in inputStr:
-			result = "account_hex"
-		elif '.' in inputStr:
-			result = "domain"
-		else:
-			result = "undefined"
-		return result
-	#end define
-
 	def GetDestinationAddr(self, destination):
-		destinationType = self.GetStrType(destination)
-		if destinationType == "undefined":
+		if self.IsAddrB64(destination):
+			pass
+		elif self.IsAddrFull(destination):
+			destination = self.AddrFull2AddrB64(destination)
+		else:
 			walletsNameList = self.GetWalletsNameList()
 			if destination in walletsNameList:
 				wallet = self.GetLocalWallet(destination)
 				destination = wallet.addrB64
-			else:
-				destination = self.GetBookmarkAddr("account", destination)
-		elif destinationType == "account_hex":
-			destination = self.AddrFull2AddrB64(destination)
 		return destination
 	#end define
 
-	def AddrFull2AddrB64(self, addrFull, bounceable=True, testnet=False):
+	def AddrFull2AddrB64(self, addrFull, bounceable=True):
+		testnet = self.IsTestnet()
 		buff = addrFull.split(':')
 		workchain = int(buff[0])
 		addr = buff[1]
@@ -3384,7 +3121,23 @@ class MyTonCore():
 		buff = buff.replace('_', '/')
 		buff = buff.encode()
 		b = base64.b64decode(buff)
-		bounceable_testnet = b[0:1]
+		testnet_int = (b[0] & 0x80)
+		if testnet_int == 0:
+			testnet = False
+		else:
+			testnet = True
+		bounceable_int = (b[0] & 0x40)
+		if bounceable_int != 0:
+			bounceable = False
+		else:
+			bounceable = True
+		networkTestnet = self.IsTestnet()
+		if testnet != networkTestnet:
+			text = f"ParseAddrB64 warning: testnet flag do not match. Addr: {testnet}, Network: {networkTestnet}"
+			local.AddLog(text, "warning")
+		#end if
+		
+		# get wc and addr	
 		workchain_bytes = b[1:2]
 		addr_bytes = b[2:34]
 		crc_bytes = b[34:36]
@@ -3422,7 +3175,6 @@ class MyTonCore():
 	#end define
 
 	def GetNetLoadAvg(self, statistics=None):
-		# statistics = self.GetSettings("statistics")
 		if statistics is None:
 			statistics = local.db.get("statistics")
 		if statistics:
@@ -3735,7 +3487,7 @@ class MyTonCore():
 			time.sleep(3)
 			account = self.GetAccount(pool.addrB64)
 			if account.balance > 0:
-				self.SendFile(pool.bocFilePath, pool, wait=False)
+				self.SendFile(pool.bocFilePath, pool, timeout=False)
 				return
 		if ex:
 			raise Exception("ActivatePool error: time out")
@@ -3901,6 +3653,28 @@ class MyTonCore():
 		poolData["validator_set_change_time"] = data[14]
 		poolData["stake_held_for"] = data[15]
 		return poolData
+	#end define
+	
+	def GetNetworkName(self):
+		mainnetValidatorsElectedFor = 65536
+		mainnetZerostateRootHash = "x55B13F6D0E1D0C34C9C2160F6F918E92D82BF9DDCF8DE2E4C94A3FDF39D15446"
+		config12 = self.GetConfig(12)
+		config15 = self.GetConfig15()
+		validatorsElectedFor = config15["validatorsElectedFor"]
+		zerostateRootHash = config12["workchains"]["root"]["node"]["value"]["zerostate_root_hash"]
+		if (zerostateRootHash == mainnetZerostateRootHash and
+			validatorsElectedFor == mainnetValidatorsElectedFor):
+			return "mainnet"
+		else:
+			return "testnet"
+	#end define
+	
+	def IsTestnet(self):
+		networkName = self.GetNetworkName()
+		if networkName == "testnet":
+			return True
+		else:
+			return False
 	#end define
 	
 	def IsAddr(self, addr):
