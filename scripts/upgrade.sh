@@ -52,13 +52,3 @@ systemctl restart validator
 # Конец
 echo -e "${COLOR}[1/1]${ENDC} TON components update completed"
 exit 0
-
-
-
-
-
-
-
-
-
-

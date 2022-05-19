@@ -67,14 +67,14 @@ def Init():
 	console.AddItem("gpk", GetPubKey, local.Translate("gpk_cmd"))
 	console.AddItem("ssoc", SignShardOverlayCert, local.Translate("ssoc_cmd"))
 	console.AddItem("isoc", ImportShardOverlayCert, local.Translate("isoc_cmd"))
-	
+
 	console.AddItem("new_nomination_controller", NewNominationController, local.Translate("new_controller_cmd"))
 	console.AddItem("get_nomination_controller_data", GetNominationControllerData, local.Translate("get_nomination_controller_data_cmd"))
 	console.AddItem("deposit_to_nomination_controller", DepositToNominationController, local.Translate("deposit_to_controller_cmd"))
 	console.AddItem("withdraw_from_nomination_controller", WithdrawFromNominationController, local.Translate("withdraw_from_nomination_controller_cmd"))
 	console.AddItem("request_to_nomination_controller", SendRequestToNominationController, local.Translate("request_to_nomination_controller_cmd"))
 	console.AddItem("new_restricted_wallet", NewRestrictedWallet, local.Translate("new_restricted_wallet_cmd"))
-	
+
 	console.AddItem("new_pool", NewPool, local.Translate("new_pool_cmd"))
 	console.AddItem("pools_list", PrintPoolsList, local.Translate("pools_list_cmd"))
 	console.AddItem("get_pool_data", GetPoolData, local.Translate("get_pool_data_cmd"))
@@ -129,8 +129,11 @@ def GetAuthorRepoBranchFromArgs(args):
 #end define
 
 def Update(args):
-	# Get author, repo, branch
+	# add safe directory to git
 	gitPath = "/usr/src/mytonctrl"
+	subprocess.run(["git", "config", "--global", "--add", "safe.directory", gitPath])
+	
+	# Get author, repo, branch
 	author, repo = GetGitAuthorAndRepo(gitPath)
 	branch = GetGitBranch(gitPath)
 	
@@ -139,7 +142,7 @@ def Update(args):
 	author = data.get("author", author)
 	repo = data.get("repo", repo)
 	branch = data.get("branch", branch)
-	
+
 	# Run script
 	runArgs = ["bash", "/usr/src/mytonctrl/scripts/update.sh", "-a", author, "-r", repo, "-b", branch]
 	exitCode = RunAsRoot(runArgs)
@@ -152,8 +155,11 @@ def Update(args):
 #end define
 
 def Upgrade(args):
-	# Get author, repo, branch
+	# add safe directory to git
 	gitPath = "/usr/src/ton"
+	subprocess.run(["git", "config", "--global", "--add", "safe.directory", gitPath])
+	
+	# Get author, repo, branch
 	author, repo = GetGitAuthorAndRepo(gitPath)
 	branch = GetGitBranch(gitPath)
 	
@@ -162,7 +168,7 @@ def Upgrade(args):
 	author = data.get("author", author)
 	repo = data.get("repo", repo)
 	branch = data.get("branch", branch)
-	
+
 	# Run script
 	runArgs = ["bash", "/usr/src/mytonctrl/scripts/upgrade.sh", "-a", author, "-r", repo, "-b", branch]
 	exitCode = RunAsRoot(runArgs)
@@ -315,7 +321,7 @@ def PrintLocalStatus(adnlAddr, validatorIndex, validatorEfficiency, validatorWal
 	cpuLoad5_text = GetColorInt(cpuLoad5, cpuNumber, logic="less")
 	cpuLoad15_text = GetColorInt(cpuLoad15, cpuNumber, logic="less")
 	cpuLoad_text = local.Translate("local_status_cpu_load").format(cpuNumber_text, cpuLoad1_text, cpuLoad5_text, cpuLoad15_text)
-	
+
 	# Memory status
 	memoryUsage = memoryInfo.get("usage")
 	memoryUsagePercent = memoryInfo.get("usagePercent")
@@ -333,7 +339,7 @@ def PrintLocalStatus(adnlAddr, validatorIndex, validatorEfficiency, validatorWal
 	netLoad5_text = GetColorInt(netLoad5, 300, logic="less")
 	netLoad15_text = GetColorInt(netLoad15, 300, logic="less")
 	netLoad_text = local.Translate("local_status_net_load").format(netLoad1_text, netLoad5_text, netLoad15_text)
-	
+
 	# Disks status
 	disksLoad_data = list()
 	for key, item in disksLoadAvg.items():
@@ -490,7 +496,7 @@ def Seqno(args):
 
 def CreatNewWallet(args):
 	version = "v1"
-	subwallet = 0
+	subwallet = 698983191 + wallet.workchain # 0x29A9A317 + workchain
 	try:
 		if len(args) == 0:
 			walletName = ton.GenerateWalletName()
@@ -503,7 +509,7 @@ def CreatNewWallet(args):
 		if len(args) == 4:
 			subwallet = args[3]
 	except:
-		ColorPrint("{red}Bad args. Usage:{endc} nw <workchain-id> <wallet-name> [<version>]")
+		ColorPrint("{red}Bad args. Usage:{endc} nw <workchain-id> <wallet-name> [<version> <subwallet>]")
 		return
 	wallet = ton.CreateWallet(walletName, workchain, version, subwallet)
 	table = list()
@@ -711,7 +717,7 @@ def CreatNewBookmark(args):
 	else:
 		type = "domain"
 	#end if
-	
+
 	bookmark = dict()
 	bookmark["name"] = name
 	bookmark["type"] = type
@@ -1145,18 +1151,12 @@ def NewRestrictedWallet(args):
 def NewPool(args):
 	try:
 		poolName = args[0]
-		if len(args) == 1:
-			validatorRewardShare = 4000
-			maxNominatorsCount = 10
-			minValidatorStake = 100
-			minNominatorStake = 100
-		else:
-			validatorRewardShare = args[1]
-			maxNominatorsCount = args[2]
-			minValidatorStake = args[3]
-			minNominatorStake = args[4]
+		validatorRewardShare = args[1]
+		maxNominatorsCount = args[2]
+		minValidatorStake = args[3]
+		minNominatorStake = args[4]
 	except:
-		ColorPrint("{red}Bad args. Usage:{endc} new_pool <pool-name> [<validator-reward-share> <max-nominators-count> <min-validator-stake> <min-nominator-stake>]")
+		ColorPrint("{red}Bad args. Usage:{endc} new_pool <pool-name> <validator-reward-share> <max-nominators-count> <min-validator-stake> <min-nominator-stake>")
 		return
 	ton.CreatePool(poolName, validatorRewardShare, maxNominatorsCount, minValidatorStake, minNominatorStake)
 	ColorPrint("NewPool - {green}OK{endc}")
