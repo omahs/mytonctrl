@@ -1514,7 +1514,7 @@ class MyTonCore():
 		
 		# Check if we have enough coins
 		if stake > config17["maxStake"]:
-			text = "Stake is greater than the maximum value. Will be used the maximum stake.")
+			text = "Stake is greater than the maximum value. Will be used the maximum stake."
 			local.AddLog(text, "error")
 			stake = config17["maxStake"]
 		if config17["minStake"] > stake:
@@ -1627,11 +1627,8 @@ class MyTonCore():
 			return
 		#end if
 
-		# Get account balance and minimum stake
-		account = self.GetAccount(addrB64)
-		minStake = self.GetMinStake()
-
 		# Calculate stake
+		account = self.GetAccount(addrB64)
 		stake = self.GetStake(account)
 
 		# Calculate endWorkTime
