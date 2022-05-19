@@ -1501,7 +1501,7 @@ class MyTonCore():
 		validators = vconfig.get("validators")
 		config17 = self.GetConfig17()
 		if stake is None and usePool:
-			stake = account.balance - 1
+			stake = account.balance - 20
 		if stake is None:
 			sp = stakePercent / 100
 			if sp > 1 or sp < 0:
@@ -1759,7 +1759,7 @@ class MyTonCore():
 			timeNow - config34["startWorkTime"] > config15["stakeHeldFor"]):
 			self.ReturnStakeWithPool(poolAddr)
 		if (poolData["state"] == 0 and self.HasPoolWithdrawRequests(pool)):
-			self.PoolWithdrawRequests(pool, wallet, poolData)
+			self.PoolWithdrawRequests(pool, wallet)
 	#end define
 
 	def PoolProcessUpdateValidatorSet(self, poolAddr, wallet):
@@ -1774,7 +1774,7 @@ class MyTonCore():
 		local.AddLog("PoolProcessUpdateValidatorSet completed")
 	#end define
 
-	def PoolWithdrawRequests(self, pool, wallet, poolData):
+	def PoolWithdrawRequests(self, pool, wallet):
 		local.AddLog("start PoolWithdrawRequests function", "debug")
 		resultFilePath = self.PoolProcessWihtdrawRequests()
 		resultFilePath = self.SignBocWithWallet(wallet, resultFilePath, pool.addrB64, 10)
