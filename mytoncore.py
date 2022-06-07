@@ -3373,9 +3373,10 @@ class MyTonCore():
 		if not os.path.isfile(gitPath + "build.sh"):
 			return
 		if not os.path.isfile("/usr/bin/func"):
-			file = open("/usr/bin/func", 'wt')
-			file.write("/usr/bin/ton/crypto/func $@")
-			file.close()
+			return
+		#	file = open("/usr/bin/func", 'wt')
+		#	file.write("/usr/bin/ton/crypto/func $@")
+		#	file.close()
 		#end if
 
 		os.makedirs(gitPath + "build", exist_ok=True)

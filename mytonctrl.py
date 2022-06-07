@@ -1137,14 +1137,14 @@ def SendRequestToNominationController(args):
 
 def NewRestrictedWallet(args):
 	try:
-		workchain = args[0]
+		workchain = int(args[0])
 		name = args[1]
 		ownerAddr = args[2]
 		subwallet = 0
 	except:
 		ColorPrint("{red}Bad args. Usage:{endc} new_restricted_wallet <workchain-id> <wallet-name> <owner-addr>")
 		return
-	ton.CreateRestrictedWallet(name, ownerAddr, workchain, subwallet)
+	ton.CreateRestrictedWallet(name, ownerAddr, workchain=workchain, subwallet=subwallet)
 	ColorPrint("NewRestrictedWallet - {green}OK{endc}")
 #end define
 
