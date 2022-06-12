@@ -677,7 +677,7 @@ def MoveCoins(args):
 	try:
 		walletName = args[0]
 		destination = args[1]
-		amount = int(args[2])
+		amount = args[2]
 		if len(args) > 3:
 			flags = args[3:]
 		else:

@@ -1971,12 +1971,25 @@ class MyTonCore():
 		return vconfig
 	#end define
 
+	def GetWalletId(self, wallet):
+		subwalletDefault = 698983191 + wallet.workchain # 0x29A9A317 + workchain
+		cmd = f"runmethodfull {wallet.addrB64} wallet_id"
+		result = self.liteClient.Run(cmd)
+		result = self.GetVarFromWorkerOutput(result, "result")
+		if result is None or "error" in result:
+			return subwalletDefault
+		subwallet = Pars(result, '[', ']')
+		subwallet = int(subwallet)
+		return subwallet
+	#end define
+
 	def MoveCoins(self, wallet, dest, coins, **kwargs):
 		local.AddLog("start MoveCoins function", "debug")
-		flags = kwargs.get("flags")
+		flags = kwargs.get("flags", list())
 		timeout = kwargs.get("timeout", 30)
-		subwalletDefault = 698983191 + wallet.workchain # 0x29A9A317 + workchain
-		subwallet = kwargs.get("subwallet", subwalletDefault)
+		subwallet = kwargs.get("subwallet")
+		if "v3" in wallet.version and subwallet is None:
+			subwallet = self.GetWalletId(wallet)
 		if coins == "all":
 			mode = 130
 			coins = 0
@@ -1984,6 +1997,7 @@ class MyTonCore():
 			mode = 160
 			coins = 0
 		else:
+			coins = float(coins)
 			mode = 3
 		#end if
 
