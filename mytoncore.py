@@ -762,34 +762,29 @@ class MyTonCore():
 	#end define
 
 	def GetFullConfigAddr(self):
-		# get buffer
-		timestamp = GetTimestamp()
-		fullConfigAddr = local.buffer.get("fullConfigAddr")
-		fullConfigAddr_time = local.buffer.get("fullConfigAddr_time")
-		if fullConfigAddr:
-			diffTime = timestamp - fullConfigAddr_time
-			if diffTime < 10:
-				return fullConfigAddr
+		# Get buffer
+		bname = "fullConfigAddr"
+		buff = self.GetFunctionBuffer(bname, timeout=60)
+		if buff:
+			return buff
 		#end if
 
 		local.AddLog("start GetFullConfigAddr function", "debug")
 		result = self.liteClient.Run("getconfig 0")
 		configAddr_hex = self.GetVarFromWorkerOutput(result, "config_addr:x")
 		fullConfigAddr = "-1:{configAddr_hex}".format(configAddr_hex=configAddr_hex)
-		local.buffer["fullConfigAddr"] = fullConfigAddr
-		local.buffer["fullConfigAddr_time"] = timestamp
+
+		# Set buffer
+		self.SetFunctionBuffer(bname, fullConfigAddr)
 		return fullConfigAddr
 	#end define
 
 	def GetFullElectorAddr(self):
 		# Get buffer
-		timestamp = GetTimestamp()
-		fullElectorAddr = local.buffer.get("fullElectorAddr")
-		fullElectorAddr_time = local.buffer.get("fullElectorAddr_time")
-		if fullElectorAddr:
-			diffTime = timestamp - fullElectorAddr_time
-			if diffTime < 10:
-				return fullElectorAddr
+		bname = "fullElectorAddr"
+		buff = self.GetFunctionBuffer(bname, timeout=60)
+		if buff:
+			return buff
 		#end if
 
 		# Get data
@@ -799,20 +794,16 @@ class MyTonCore():
 		fullElectorAddr = "-1:{electorAddr_hex}".format(electorAddr_hex=electorAddr_hex)
 
 		# Set buffer
-		local.buffer["fullElectorAddr"] = fullElectorAddr
-		local.buffer["fullElectorAddr_time"] = timestamp
+		self.SetFunctionBuffer(bname, fullElectorAddr)
 		return fullElectorAddr
 	#end define
 
 	def GetFullMinterAddr(self):
 		# Get buffer
-		timestamp = GetTimestamp()
-		fullMinterAddr = local.buffer.get("fullMinterAddr")
-		fullMinterAddr_time = local.buffer.get("fullMinterAddr_time")
-		if fullMinterAddr:
-			diffTime = timestamp - fullMinterAddr_time
-			if diffTime < 10:
-				return fullMinterAddr
+		bname = "fullMinterAddr"
+		buff = self.GetFunctionBuffer(bname, timeout=60)
+		if buff:
+			return buff
 		#end if
 
 		local.AddLog("start GetFullMinterAddr function", "debug")
@@ -821,40 +812,34 @@ class MyTonCore():
 		fullMinterAddr = "-1:{minterAddr_hex}".format(minterAddr_hex=minterAddr_hex)
 
 		# Set buffer
-		local.buffer["fullMinterAddr"] = fullMinterAddr
-		local.buffer["fullMinterAddr_time"] = timestamp
+		self.SetFunctionBuffer(bname, fullMinterAddr)
 		return fullMinterAddr
 	#end define
 
 	def GetFullDnsRootAddr(self):
-		# get buffer
-		timestamp = GetTimestamp()
-		fullDnsRootAddr = local.buffer.get("fullDnsRootAddr")
-		fullDnsRootAddr_time = local.buffer.get("fullDnsRootAddr_time")
-		if fullDnsRootAddr:
-			diffTime = timestamp - fullDnsRootAddr_time
-			if diffTime < 10:
-				return fullDnsRootAddr
+		# Get buffer
+		bname = "fullDnsRootAddr"
+		buff = self.GetFunctionBuffer(bname, timeout=60)
+		if buff:
+			return buff
 		#end if
 
 		local.AddLog("start GetFullDnsRootAddr function", "debug")
 		result = self.liteClient.Run("getconfig 4")
 		dnsRootAddr_hex = self.GetVarFromWorkerOutput(result, "dns_root_addr:x")
 		fullDnsRootAddr = "-1:{dnsRootAddr_hex}".format(dnsRootAddr_hex=dnsRootAddr_hex)
-		local.buffer["fullDnsRootAddr"] = fullDnsRootAddr
-		local.buffer["fullDnsRootAddr_time"] = timestamp
+
+		# Set buffer
+		self.SetFunctionBuffer(bname, fullDnsRootAddr)
 		return fullDnsRootAddr
 	#end define
 
 	def GetActiveElectionId(self, fullElectorAddr):
-		# get buffer
-		timestamp = GetTimestamp()
-		activeElectionId = local.buffer.get("activeElectionId")
-		activeElectionId_time = local.buffer.get("activeElectionId_time")
-		if activeElectionId:
-			diffTime = timestamp - activeElectionId_time
-			if diffTime < 10:
-				return activeElectionId
+		# Get buffer
+		bname = "activeElectionId"
+		buff = self.GetFunctionBuffer(bname)
+		if buff:
+			return buff
 		#end if
 
 		local.AddLog("start GetActiveElectionId function", "debug")
@@ -864,8 +849,9 @@ class MyTonCore():
 		activeElectionId = activeElectionId.replace(' ', '')
 		activeElectionId = Pars(activeElectionId, '[', ']')
 		activeElectionId = int(activeElectionId)
-		local.buffer["activeElectionId"] = activeElectionId
-		local.buffer["activeElectionId_time"] = timestamp
+
+		# Set buffer
+		self.SetFunctionBuffer(bname, activeElectionId)
 		return activeElectionId
 	#end define
 
@@ -1044,13 +1030,11 @@ class MyTonCore():
 	#end define
 
 	def GetValidatorStatus(self):
-		# get buffer
-		timestamp = GetTimestamp()
-		validatorStatus = local.buffer.get("validatorStatus")
-		if validatorStatus:
-			diffTime = timestamp - validatorStatus.get("unixtime")
-			if diffTime < 10:
-				return validatorStatus
+		# Get buffer
+		bname = "validatorStatus"
+		buff = self.GetFunctionBuffer(bname)
+		if buff:
+			return buff
 		#end if
 
 		# local.AddLog("start GetValidatorStatus function", "debug")
@@ -1075,10 +1059,12 @@ class MyTonCore():
 			validatorStatus["masterBlocksNum"] = local.buffer.get("masterBlocksNum", -1)
 		except:
 			validatorStatus["isWorking"] = False
-			validatorStatus["unixtime"] = timestamp
+			validatorStatus["unixtime"] = GetTimestamp()
 			validatorStatus["masterchainblocktime"] = 0
 		validatorStatus["outOfSync"] = validatorStatus["unixtime"] - validatorStatus["masterchainblocktime"]
-		local.buffer["validatorStatus"] = validatorStatus # set buffer
+
+		# Set buffer
+		self.SetFunctionBuffer(bname, validatorStatus)
 		return validatorStatus
 	#end define
 
@@ -1094,33 +1080,12 @@ class MyTonCore():
 		return item
 	#end define
 
-	def GetConfigs(self):
-		configs = local.buffer.get("configs")
-		if configs is None:
-			configs = dict()
-			local.buffer["configs"] = configs
-		return configs
-	#end define
-
-	def GetConfigsTimestamps(self):
-		configsTimestamps = local.buffer.get("configsTimestamps")
-		if configsTimestamps is None:
-			configsTimestamps = dict()
-			local.buffer["configsTimestamps"] = configsTimestamps
-		return configsTimestamps
-	#end define
-
 	def GetConfig(self, configId):
-		# get buffer
-		timestamp = GetTimestamp()
-		configs = self.GetConfigs()
-		configsTimestamps = self.GetConfigsTimestamps()
-		config = configs.get(configId)
-		configTimestamp = configsTimestamps.get(configId)
-		if config:
-			diffTime = timestamp - configTimestamp
-			if diffTime < 60:
-				return config
+		# Get buffer
+		bname = "config" + str(configId)
+		buff = self.GetFunctionBuffer(bname, timeout=60)
+		if buff:
+			return buff
 		#end if
 
 		text = "start GetConfig function ({})".format(configId)
@@ -1130,9 +1095,9 @@ class MyTonCore():
 		start = result.find("ConfigParam")
 		text = result[start:]
 		data = self.Tlb2Json(text)
-		# write buffer
-		configs[configId] = data
-		configsTimestamps[configId] = timestamp
+
+		# Set buffer
+		self.SetFunctionBuffer(bname, data)
 		return data
 	#end define
 
@@ -1156,18 +1121,15 @@ class MyTonCore():
 	#end define
 
 	def GetConfig32(self):
-		# get buffer
-		timestamp = GetTimestamp()
-		config32 = local.buffer.get("config32")
-		if config32:
-			diffTime = timestamp - config32.get("timestamp")
-			if diffTime < 60:
-				return config32
+		# Get buffer
+		bname = "config32"
+		buff = self.GetFunctionBuffer(bname, timeout=60)
+		if buff:
+			return buff
 		#end if
 
 		local.AddLog("start GetConfig32 function", "debug")
 		config32 = dict()
-		config32["timestamp"] = timestamp
 		result = self.liteClient.Run("getconfig 32")
 		config32["totalValidators"] = int(Pars(result, "total:", ' '))
 		config32["startWorkTime"] = int(Pars(result, "utime_since:", ' '))
@@ -1188,23 +1150,22 @@ class MyTonCore():
 				buff["weight"] = validatorWeight
 				validators.append(buff)
 		config32["validators"] = validators
-		local.buffer["config32"] = config32 # set buffer
+
+		# Set buffer
+		self.SetFunctionBuffer(bname, config32)
 		return config32
 	#end define
 
 	def GetConfig34(self):
-		# get buffer
-		timestamp = GetTimestamp()
-		config34 = local.buffer.get("config34")
-		if config34:
-			diffTime = timestamp - config34.get("timestamp")
-			if diffTime < 60:
-				return config34
+		# Get buffer
+		bname = "config34"
+		buff = self.GetFunctionBuffer(bname, timeout=60)
+		if buff:
+			return buff
 		#end if
 
 		local.AddLog("start GetConfig34 function", "debug")
 		config34 = dict()
-		config34["timestamp"] = timestamp
 		result = self.liteClient.Run("getconfig 34")
 		config34["totalValidators"] = int(Pars(result, "total:", ' '))
 		config34["startWorkTime"] = int(Pars(result, "utime_since:", ' '))
@@ -1226,23 +1187,22 @@ class MyTonCore():
 				buff["weight"] = validatorWeight
 				validators.append(buff)
 		config34["validators"] = validators
-		local.buffer["config34"] = config34 # set buffer
+
+		# Set buffer
+		self.SetFunctionBuffer(bname, config34)
 		return config34
 	#end define
 
 	def GetConfig36(self):
-		# get buffer
-		timestamp = GetTimestamp()
-		config36 = local.buffer.get("config36")
-		if config36:
-			diffTime = timestamp - config36.get("timestamp")
-			if diffTime < 60:
-				return config36
+		# Get buffer
+		bname = "config36"
+		buff = self.GetFunctionBuffer(bname, timeout=60)
+		if buff:
+			return buff
 		#end if
 
 		local.AddLog("start GetConfig36 function", "debug")
 		config36 = dict()
-		config36["timestamp"] = timestamp
 		try:
 			result = self.liteClient.Run("getconfig 36")
 			config36["totalValidators"] = int(Pars(result, "total:", ' '))
@@ -1263,7 +1223,10 @@ class MyTonCore():
 			config36["validators"] = validators
 		except:
 			config36["validators"] = list()
-		local.buffer["config36"] = config36 # set buffer
+		#end try
+
+		# Set buffer
+		self.SetFunctionBuffer(bname, config36)
 		return config36
 	#end define
 
@@ -1321,7 +1284,6 @@ class MyTonCore():
 	#end define
 
 	def GetAdnlAddr(self):
-		local.AddLog("start GetAdnlAddr function", "debug")
 		adnlAddr = local.db.get("adnlAddr")
 		return adnlAddr
 	#end define
@@ -1416,8 +1378,11 @@ class MyTonCore():
 		return pubkey, fileName
 	#end define
 
-	def SignBocWithWallet(self, wallet, bocPath, destAddr, coins, **kwargs):
+	def SignBocWithWallet(self, wallet, bocPath, dest, coins, **kwargs):
 		local.AddLog("start SignBocWithWallet function", "debug")
+		flags = kwargs.get("flags", list())
+		subwalletDefault = 698983191 + wallet.workchain # 0x29A9A317 + workchain
+		subwallet = kwargs.get("subwallet", subwalletDefault)
 
 		# Balance checking
 		account = self.GetAccount(wallet.addrB64)
@@ -1425,19 +1390,30 @@ class MyTonCore():
 			raise Exception("Wallet balance is less than requested coins")
 		#end if
 
-		subwalletDefault = 698983191 + wallet.workchain # 0x29A9A317 + workchain
-		subwallet = kwargs.get("subwallet", subwalletDefault)
+		# Bounceable checking
+		destAccount = self.GetAccount(dest)
+		bounceable = self.IsBounceableAddrB64(dest)
+		if bounceable == False and destAccount.status == "active":
+			flags += ["-b"]
+			text = "Find non-bounceable flag, but destination account already active. Using bounceable flag"
+			local.AddLog(text, "warning")
+		elif "-n" not in flags and bounceable == True and destAccount.status != "active":
+			raise Exception("Find bounceable flag, but destination account is not active. Use non-bounceable address or flag -n")
+		#end if
+
 		seqno = self.GetSeqno(wallet)
 		resultFilePath = self.tempDir + wallet.name + "_wallet-query"
 		if "v1" in wallet.version:
 			fiftScript = "wallet.fif"
-			args = [fiftScript, wallet.path, destAddr, seqno, coins, "-B", bocPath, resultFilePath]
+			args = [fiftScript, wallet.path, dest, seqno, coins, "-B", bocPath, resultFilePath]
 		elif "v2" in wallet.version:
 			fiftScript = "wallet-v2.fif"
-			args = [fiftScript, wallet.path, destAddr, seqno, coins, "-B", bocPath, resultFilePath]
+			args = [fiftScript, wallet.path, dest, seqno, coins, "-B", bocPath, resultFilePath]
 		elif "v3" in wallet.version:
 			fiftScript = "wallet-v3.fif"
-			args = [fiftScript, wallet.path, destAddr, subwallet, seqno, coins, "-B", bocPath, resultFilePath]
+			args = [fiftScript, wallet.path, dest, subwallet, seqno, coins, "-B", bocPath, resultFilePath]
+		if flags:
+			args += flags
 		result = self.fift.Run(args)
 		resultFilePath = Pars(result, "Saved to file ", ")")
 		return resultFilePath
@@ -1484,9 +1460,9 @@ class MyTonCore():
 		return returnedStake
 	#end define
 
-	def RecoverStake(self):
-		local.AddLog("start RecoverStake function", "debug")
-		resultFilePath = self.tempDir + "recover-query"
+	def ProcessRecoverStake(self):
+		local.AddLog("start ProcessRecoverStake function", "debug")
+		resultFilePath = self.tempDir + self.nodeName + "recover-query"
 		args = ["recover-stake.fif", resultFilePath]
 		result = self.fift.Run(args)
 		resultFilePath = Pars(result, "Saved to file ", '\n')
@@ -1511,22 +1487,22 @@ class MyTonCore():
 			elif len(validators) > 0:
 				stake = int(account.balance*sp)
 		#end if
-		
+
 		# Check if we have enough coins
 		if stake > config17["maxStake"]:
 			text = "Stake is greater than the maximum value. Will be used the maximum stake."
-			local.AddLog(text, "error")
+			local.AddLog(text, "warning")
 			stake = config17["maxStake"]
 		if config17["minStake"] > stake:
 			text = "Stake less than the minimum stake. Minimum stake: {minStake}".format(minStake=config17["minStake"])
-			local.AddLog(text, "error")
-			return
+			#local.AddLog(text, "error")
+			raise Exception(text)
 		if stake > account.balance:
 			text = "Don't have enough coins. stake: {stake}, account balance: {balance}".format(stake=stake, balance=account.balance)
-			local.AddLog(text, "error")
-			return
+			#local.AddLog(text, "error")
+			raise Exception(text)
 		#end if
-		
+
 		return stake
 	#end define
 
@@ -1690,7 +1666,7 @@ class MyTonCore():
 		return validatorKey
 	#end define
 
-	def ReturnStake(self):
+	def RecoverStake(self):
 		usePool = local.db.get("usePool")
 		if usePool == True:
 			return
@@ -1701,7 +1677,7 @@ class MyTonCore():
 			raise Exception("Validator wallet not found")
 		#end if
 
-		local.AddLog("start ReturnStake function", "debug")
+		local.AddLog("start RecoverStake function", "debug")
 		fullElectorAddr = self.GetFullElectorAddr()
 		returnedStake = self.GetReturnedStake(fullElectorAddr, wallet.addrB64)
 		if returnedStake == 0:
@@ -1709,23 +1685,23 @@ class MyTonCore():
 			return
 		#end if
 
-		resultFilePath = self.RecoverStake()
+		resultFilePath = self.ProcessRecoverStake()
 		resultFilePath = self.SignBocWithWallet(wallet, resultFilePath, fullElectorAddr, 1)
 		self.SendFile(resultFilePath, wallet)
-		local.AddLog("ReturnStake completed")
+		local.AddLog("RecoverStake completed")
 	#end define
 
-	def ReturnStakeWithPool(self, poolAddr):
+	def PoolRecoverStake(self, poolAddr):
 		wallet = self.GetValidatorWallet()
 		if wallet is None:
 			raise Exception("Validator wallet not found")
 		#end if
 
-		local.AddLog("start ReturnStakeWithPool function", "debug")
-		resultFilePath = self.RecoverStakeWithPool()
+		local.AddLog("start PoolRecoverStake function", "debug")
+		resultFilePath = self.PoolProcessRecoverStake()
 		resultFilePath = self.SignBocWithWallet(wallet, resultFilePath, poolAddr, 1.2)
 		self.SendFile(resultFilePath, wallet)
-		local.AddLog("ReturnStakeWithPool completed")
+		local.AddLog("PoolRecoverStake completed")
 	#end define
 
 	def PoolsUpdateValidatorSet(self):
@@ -1745,7 +1721,6 @@ class MyTonCore():
 		#en if
 
 		timeNow = int(time.time())
-		config15 = self.GetConfig15()
 		config34 = self.GetConfig34()
 		fullElectorAddr = self.GetFullElectorAddr()
 		returnedStake = self.GetReturnedStake(fullElectorAddr, poolAddr)
@@ -1756,8 +1731,8 @@ class MyTonCore():
 		if (returnedStake > 0 and
 			poolData["state"] == 2 and
 			poolData["validator_set_changes_count"] >= 2 and
-			timeNow - config34["startWorkTime"] > config15["stakeHeldFor"]):
-			self.ReturnStakeWithPool(poolAddr)
+			timeNow - poolData["validator_set_change_time"] > poolData["stake_held_for"] + 60):
+			self.PoolRecoverStake(poolAddr)
 		if (poolData["state"] == 0 and self.HasPoolWithdrawRequests(pool)):
 			self.PoolWithdrawRequests(pool, wallet)
 	#end define
@@ -1879,7 +1854,7 @@ class MyTonCore():
 	#end define
 
 	def ImportWallet(self, addrB64, key):
-		workchain, addr = self.ParseAddrB64(addrB64)
+		workchain, addr, bounceable = self.ParseAddrB64(addrB64)
 		workchain_bytes = int.to_bytes(workchain, 4, "big", signed=True)
 		addr_bytes = bytes.fromhex(addr)
 		key_bytes = base64.b64decode(key)
@@ -2007,6 +1982,17 @@ class MyTonCore():
 			raise Exception("Wallet balance is less than requested coins")
 		#end if
 
+		# Bounceable checking
+		destAccount = self.GetAccount(dest)
+		bounceable = self.IsBounceableAddrB64(dest)
+		if bounceable == False and destAccount.status == "active":
+			flags += ["-b"]
+			text = "Find non-bounceable flag, but destination account already active. Using bounceable flag"
+			local.AddLog(text, "warning")
+		elif "-n" not in flags and bounceable == True and destAccount.status != "active":
+			raise Exception("Find bounceable flag, but destination account is not active. Use non-bounceable address or flag -n")
+		#end if
+
 		seqno = self.GetSeqno(wallet)
 		resultFilePath = local.buffer.get("myTempDir") + wallet.name + "_wallet-query"
 		if "v1" in wallet.version:
@@ -2086,15 +2072,10 @@ class MyTonCore():
 
 	def GetElectionEntries(self, past=False):
 		# Get buffer
-		timestamp = GetTimestamp()
 		bname = "electionEntries" + str(past)
-		bname2 = bname + "_time"
-		electionEntries = local.buffer.get(bname)
-		electionEntries_time = local.buffer.get(bname2)
-		if electionEntries:
-			diffTime = timestamp - electionEntries_time
-			if diffTime < 60:
-				return electionEntries
+		buff = self.GetFunctionBuffer(bname)
+		if buff:
+			return buff
 		#end if
 
 		# Check if the elections are open
@@ -2148,8 +2129,7 @@ class MyTonCore():
 		#end for
 
 		# Set buffer
-		local.buffer["electionEntries"] = entries
-		local.buffer["electionEntries_time"] = timestamp
+		self.SetFunctionBuffer(bname, entries)
 
 		# Save elections
 		electionId = str(electionId)
@@ -2302,15 +2282,10 @@ class MyTonCore():
 
 	def GetComplaints(self, electionId=None, past=False):
 		# Get buffer
-		timestamp = GetTimestamp()
 		bname = "complaints" + str(past)
-		bname2 = bname + "_time"
-		complaints = local.buffer.get(bname)
-		complaints_time = local.buffer.get(bname2)
-		if complaints:
-			diffTime = timestamp - complaints_time
-			if diffTime < 60:
-				return complaints
+		buff = self.GetFunctionBuffer(bname)
+		if buff:
+			return buff
 		#end if
 
 		# Calculate complaints time
@@ -2385,8 +2360,7 @@ class MyTonCore():
 		#end for
 
 		# Set buffer
-		local.buffer[bname] = complaints
-		local.buffer[bname2] = timestamp
+		self.SetFunctionBuffer(bname, complaints)
 
 		# Save complaints
 		if len(complaints) > 0:
@@ -2544,40 +2518,31 @@ class MyTonCore():
 
 	def GetOnlineValidators(self):
 		onlineValidators = list()
-		data = self.GetValidatorsLoad()
-		if len(data) == 0:
-			return
-		for key, item in data.items():
-			online = item.get("online")
+		validators = self.GetValidatorsList()
+		for validator in validators:
+			online = validator.get("online")
 			if online is True:
-				onlineValidators.append(item)
+				onlineValidators.append(validator)
+		if len(onlineValidators) == 0:
+			onlineValidators = None
 		return onlineValidators
 	#end define
 
-	def GetValidatorsLoad(self, start=None, end=None, timeDiff=2000, saveCompFiles=False):
-		timestamp = GetTimestamp()
-		if start is None or end is None:
-			end = timestamp - 60
-			start = end - timeDiff
-		else:
-			timeDiff = end - start
-		# get buffer
-		bname = "validatorsLoad_{timeDiff}".format(timeDiff=timeDiff)
-		buff = local.buffer.get(bname)
+	def GetValidatorsLoad(self, start, end, saveCompFiles=False):
+		# Get buffer
+		bname = f"validatorsLoad{start}{end}"
+		buff = self.GetFunctionBuffer(bname, timeout=60)
 		if buff:
-			diffTime = timestamp - buff.get("timestamp")
-			if diffTime < 60:
-				data = buff.get("data")
-				return data
+			return buff
 		#end if
 
 		text = "start GetValidatorsLoad function ({}, {})".format(start, end)
 		local.AddLog(text, "debug")
 		if saveCompFiles is True:
-			filePrefix = self.tempDir + "checkload_{start}_{end}".format(start=start, end=end)
+			filePrefix = self.tempDir + f"checkload_{start}_{end}"
 		else:
 			filePrefix = ""
-		cmd = "checkloadall {start} {end} {filePrefix}".format(end=end, start=start, filePrefix=filePrefix)
+		cmd = f"checkloadall {start} {end} {filePrefix}"
 		result = self.liteClient.Run(cmd, timeout=30)
 		lines = result.split('\n')
 		data = dict()
@@ -2641,18 +2606,22 @@ class MyTonCore():
 				data[vid] = item
 		#end for
 
-		# Write buffer
-		buff = dict()
-		buff["timestamp"] = timestamp
-		buff["data"] = data
-		local.buffer[bname] = buff
-
+		# Set buffer
+		self.SetFunctionBuffer(bname, data)
 		return data
 	#end define
 
 	def GetValidatorsList(self, past=False):
-		start = None
-		end = None
+		# Get buffer
+		bname = "validatorsList" + str(past)
+		buff = self.GetFunctionBuffer(bname, timeout=60)
+		if buff:
+			return buff
+		#end if
+
+		timestamp = GetTimestamp()
+		end = timestamp - 60
+		start = end - 2000
 		config = self.GetConfig34()
 		if past:
 			config = self.GetConfig32()
@@ -2673,6 +2642,10 @@ class MyTonCore():
 				validator["online"] = validatorsLoad[vid]["online"]
 			if saveElectionEntries and adnlAddr in saveElectionEntries:
 				validator["walletAddr"] = saveElectionEntries[adnlAddr]["walletAddr"]
+		#end for
+
+		# Set buffer
+		self.SetFunctionBuffer(bname, validators)
 		return validators
 	#end define
 
@@ -3125,6 +3098,13 @@ class MyTonCore():
 	#end define
 
 	def ParseAddrB64(self, addrB64):
+		# Get buffer
+		fname = addrB64
+		buff = self.GetFunctionBuffer(fname, timeout=1)
+		if buff:
+			return buff
+		#end if
+
 		buff = addrB64.replace('-', '+')
 		buff = buff.replace('_', '/')
 		buff = buff.encode()
@@ -3149,16 +3129,20 @@ class MyTonCore():
 		workchain_bytes = b[1:2]
 		addr_bytes = b[2:34]
 		crc_bytes = b[34:36]
-		data = bytes(b[:34])
+		crc_data = bytes(b[:34])
 		crc = int.from_bytes(crc_bytes, "big")
-		check_crc = crc16.crc16xmodem(data)
+		check_crc = crc16.crc16xmodem(crc_data)
 		if crc != check_crc:
 			raise Exception("ParseAddrB64 error: crc do not match")
 		#end if
 
 		workchain = int.from_bytes(workchain_bytes, "big", signed=True)
 		addr = addr_bytes.hex()
-		return workchain, addr
+
+		# Set buffer
+		data = (workchain, addr, bounceable)
+		self.SetFunctionBuffer(fname, data)
+		return data
 	#end define
 
 	def ParseAddrFull(self, addrFull):
@@ -3173,7 +3157,7 @@ class MyTonCore():
 
 	def ParseInputAddr(self, inputAddr):
 		if self.IsAddrB64(inputAddr):
-			workchain, addr = self.ParseAddrB64(inputAddr)
+			workchain, addr, bounceable = self.ParseAddrB64(inputAddr)
 			return workchain, addr
 		elif self.IsAddrFull(inputAddr):
 			workchain, addr = self.ParseAddrFull(inputAddr)
@@ -3181,6 +3165,14 @@ class MyTonCore():
 		else:
 			raise Exception(f"ParseInputAddr error: input address is not a adress: {inputAddr}")
 	#end define
+
+	def IsBounceableAddrB64(self, inputAddr):
+		bounceable = None
+		try:
+			workchain, addr, bounceable = self.ParseAddrB64(inputAddr)
+		except: pass
+		return bounceable
+	#en define
 
 	def GetNetLoadAvg(self, statistics=None):
 		if statistics is None:
@@ -3468,7 +3460,7 @@ class MyTonCore():
 		self.SetWalletVersion(wallet.addrB64, version)
 	#end define
 
-	def CreatePool(self, poolName, validatorRewardShare, maxNominatorsCount, minValidatorStake, minNominatorStake):
+	def CreatePool(self, poolName, validatorRewardSharePercent, maxNominatorsCount, minValidatorStake, minNominatorStake):
 		local.AddLog("start CreatePool function", "debug")
 		contractPath = self.contractsDir + "nominator-pool/"
 		if not os.path.isdir(contractPath):
@@ -3480,6 +3472,7 @@ class MyTonCore():
 			local.AddLog("CreatePool error: Pool already exists: " + filePath, "warning")
 		#end if
 
+		validatorRewardShare = int(validatorRewardSharePercent * 100)
 		fiftScript = self.contractsDir + "nominator-pool/func/new-pool.fif"
 		wallet = self.GetValidatorWallet()
 		args = [fiftScript, wallet.addrB64, validatorRewardShare, maxNominatorsCount, minValidatorStake, minNominatorStake, filePath]
@@ -3517,7 +3510,7 @@ class MyTonCore():
 		fiftScript = self.contractsDir + "nominator-pool/func/validator-withdraw.fif"
 		args = [fiftScript, amount, bocPath]
 		result = self.fift.Run(args)
-		resultFilePath = self.SignBocWithWallet(wallet, bocPath, pollAddr, 1.3)
+		resultFilePath = self.SignBocWithWallet(wallet, bocPath, pollAddr, 1.35)
 		self.SendFile(resultFilePath, wallet)
 	#end define
 
@@ -3532,8 +3525,8 @@ class MyTonCore():
 		return pubkey, fileName
 	#end define
 
-	def RecoverStakeWithPool(self):
-		local.AddLog("start RecoverStakeWithPool function", "debug")
+	def PoolProcessRecoverStake(self):
+		local.AddLog("start PoolProcessRecoverStake function", "debug")
 		resultFilePath = self.tempDir + "recover-query.boc"
 		fiftScript = self.contractsDir + "nominator-pool/func/recover-stake.fif"
 		args = [fiftScript, resultFilePath]
@@ -3675,6 +3668,26 @@ class MyTonCore():
 			return "mainnet"
 		else:
 			return "testnet"
+	#end define
+
+	def GetFunctionBuffer(self, name, timeout=10):
+		timestamp = GetTimestamp()
+		buff = local.buffer.get(name)
+		if buff is None:
+			return
+		buffTime = buff.get("time")
+		diffTime = timestamp - buffTime
+		if diffTime > timeout:
+			return
+		data = buff.get("data")
+		return data
+	#end define
+
+	def SetFunctionBuffer(self, name, data):
+		buff = dict()
+		buff["time"] = GetTimestamp()
+		buff["data"] = data
+		local.buffer[name] = buff
 	#end define
 
 	def IsTestnet(self):
@@ -3979,7 +3992,7 @@ def Elections(ton):
 		ton.PoolsUpdateValidatorSet()
 		ton.ElectionEntry()
 	else:
-		ton.ReturnStake()
+		ton.RecoverStake()
 		ton.ElectionEntry()
 #end define
 
@@ -4359,7 +4372,6 @@ def Slashing(ton):
 	#end if
 
 	# Creating complaints
-	timestamp = GetTimestamp()
 	slashTime = local.buffer.get("slashTime")
 	config32 = ton.GetConfig32()
 	start = config32.get("startWorkTime")

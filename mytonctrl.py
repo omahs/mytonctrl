@@ -132,7 +132,7 @@ def Update(args):
 	# add safe directory to git
 	gitPath = "/usr/src/mytonctrl"
 	subprocess.run(["git", "config", "--global", "--add", "safe.directory", gitPath])
-	
+
 	# Get author, repo, branch
 	author, repo = GetGitAuthorAndRepo(gitPath)
 	branch = GetGitBranch(gitPath)
@@ -158,7 +158,7 @@ def Upgrade(args):
 	# add safe directory to git
 	gitPath = "/usr/src/ton"
 	subprocess.run(["git", "config", "--global", "--add", "safe.directory", gitPath])
-	
+
 	# Get author, repo, branch
 	author, repo = GetGitAuthorAndRepo(gitPath)
 	branch = GetGitBranch(gitPath)
@@ -496,22 +496,23 @@ def Seqno(args):
 
 def CreatNewWallet(args):
 	version = "v1"
-	subwallet = 698983191 + wallet.workchain # 0x29A9A317 + workchain
 	try:
 		if len(args) == 0:
 			walletName = ton.GenerateWalletName()
 			workchain = 0
 		else:
-			workchain = args[0]
+			workchain = int(args[0])
 			walletName = args[1]
 		if len(args) > 2:
 			version = args[2]
 		if len(args) == 4:
-			subwallet = args[3]
+			subwallet = int(args[3])
+		else:
+			subwallet = 698983191 + workchain # 0x29A9A317 + workchain
 	except:
 		ColorPrint("{red}Bad args. Usage:{endc} nw <workchain-id> <wallet-name> [<version> <subwallet>]")
 		return
-	wallet = ton.CreateWallet(walletName, workchain, version, subwallet)
+	wallet = ton.CreateWallet(walletName, workchain, version, subwallet=subwallet)
 	table = list()
 	table += [["Name", "Workchain", "Address"]]
 	table += [[wallet.name, wallet.workchain, wallet.addrB64_init]]
@@ -678,10 +679,7 @@ def MoveCoins(args):
 		walletName = args[0]
 		destination = args[1]
 		amount = args[2]
-		if len(args) > 3:
-			flags = args[3:]
-		else:
-			flags = list()
+		flags = args[3:]
 	except:
 		ColorPrint("{red}Bad args. Usage:{endc} mg <wallet-name> <account-addr | bookmark-name> <amount>")
 		return
@@ -695,7 +693,7 @@ def MoveCoinsThroughProxy(args):
 	try:
 		walletName = args[0]
 		destination = args[1]
-		amount = int(args[2])
+		amount = args[2]
 	except:
 		ColorPrint("{red}Bad args. Usage:{endc} mgtp <wallet-name> <account-addr | bookmark-name> <amount>")
 		return
@@ -1077,12 +1075,10 @@ def NewNominationController(args):
 		nominatorAddr = args[1]
 		rewardShare = args[2]
 		coverAbility = args[3]
-		workchain = -1
-		subwallet = 0
 	except:
 		ColorPrint("{red}Bad args. Usage:{endc} new_controller <controller-name> <nominator-addr> <reward-share> <cover-ability>")
 		return
-	ton.CreateNominationController(name, nominatorAddr, workchain, subwallet, rewardShare, coverAbility)
+	ton.CreateNominationController(name, nominatorAddr, rewardShare=rewardShare, coverAbility=coverAbility)
 	ColorPrint("NewNominationController - {green}OK{endc}")
 #end define
 
@@ -1101,7 +1097,7 @@ def DepositToNominationController(args):
 	try:
 		walletName = args[0]
 		destination = args[1]
-		amount = args[2]
+		amount = float(args[2])
 	except:
 		ColorPrint("{red}Bad args. Usage:{endc} add_to_nomination_controller <wallet-name> <controller-addr> <amount>")
 		return
@@ -1114,7 +1110,7 @@ def WithdrawFromNominationController(args):
 	try:
 		walletName = args[0]
 		destination = args[1]
-		amount = args[2]
+		amount = float(args[2])
 	except:
 		ColorPrint("{red}Bad args. Usage:{endc} withdraw_from_nomination_controller <wallet-name> <controller-addr> <amount>")
 		return
@@ -1140,25 +1136,25 @@ def NewRestrictedWallet(args):
 		workchain = int(args[0])
 		name = args[1]
 		ownerAddr = args[2]
-		subwallet = 0
+		#subwallet = args[3]
 	except:
 		ColorPrint("{red}Bad args. Usage:{endc} new_restricted_wallet <workchain-id> <wallet-name> <owner-addr>")
 		return
-	ton.CreateRestrictedWallet(name, ownerAddr, workchain=workchain, subwallet=subwallet)
+	ton.CreateRestrictedWallet(name, ownerAddr, workchain)
 	ColorPrint("NewRestrictedWallet - {green}OK{endc}")
 #end define
 
 def NewPool(args):
 	try:
 		poolName = args[0]
-		validatorRewardShare = args[1]
-		maxNominatorsCount = args[2]
-		minValidatorStake = args[3]
-		minNominatorStake = args[4]
+		validatorRewardSharePercent = float(args[1])
+		maxNominatorsCount = int(args[2])
+		minValidatorStake = int(args[3])
+		minNominatorStake = int(args[4])
 	except:
-		ColorPrint("{red}Bad args. Usage:{endc} new_pool <pool-name> <validator-reward-share> <max-nominators-count> <min-validator-stake> <min-nominator-stake>")
+		ColorPrint("{red}Bad args. Usage:{endc} new_pool <pool-name> <validator-reward-share-percent> <max-nominators-count> <min-validator-stake> <min-nominator-stake>")
 		return
-	ton.CreatePool(poolName, validatorRewardShare, maxNominatorsCount, minValidatorStake, minNominatorStake)
+	ton.CreatePool(poolName, validatorRewardSharePercent, maxNominatorsCount, minValidatorStake, minNominatorStake)
 	ColorPrint("NewPool - {green}OK{endc}")
 #end define
 
@@ -1210,7 +1206,7 @@ def DepositToPool(args):
 	try:
 		walletName = args[0]
 		pollAddr = args[1]
-		amount = int(args[2])
+		amount = float(args[2])
 	except:
 		ColorPrint("{red}Bad args. Usage:{endc} deposit_to_pool <wallet-name> <pool-addr> <amount>")
 		return
@@ -1222,7 +1218,7 @@ def WithdrawFromPool(args):
 	try:
 		walletName = args[0]
 		poolAddr = args[1]
-		amount = args[2]
+		amount = float(args[2])
 	except:
 		ColorPrint("{red}Bad args. Usage:{endc} withdraw_from_pool <wallet-name> <pool-addr> <amount>")
 		return
