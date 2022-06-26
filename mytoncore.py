@@ -1462,7 +1462,7 @@ class MyTonCore():
 
 	def ProcessRecoverStake(self):
 		local.AddLog("start ProcessRecoverStake function", "debug")
-		resultFilePath = self.tempDir + self.nodeName + "recover-query"
+		resultFilePath = self.tempDir + "recover-query"
 		args = ["recover-stake.fif", resultFilePath]
 		result = self.fift.Run(args)
 		resultFilePath = Pars(result, "Saved to file ", '\n')
