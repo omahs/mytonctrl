@@ -8,6 +8,7 @@ import hashlib
 import requests
 import re
 from mypylib.mypylib import *
+from functions.session_stats import read_session_stats
 
 local = MyPyClass(__file__)
 
@@ -2736,6 +2737,26 @@ class MyTonCore():
 				efficiency = validator.get("efficiency")
 				return efficiency
 		local.add_log("GetValidatorEfficiency warning: efficiency not found.", "warning")
+	#end define
+	
+	def GetValidatorEfficiency2(self):
+		config34 = self.GetConfig34()
+		validator_uptime = get_service_uptime("validator")
+		current_round_time = int(time.time()) - config34.get("startWorkTime")
+		data1 = read_session_stats(600)
+		data2 = read_session_stats(current_round_time)
+		data3 = read_session_stats(validator_uptime)
+		
+		efficiency1 = 0
+		efficiency2 = 0
+		efficiency3 = 0
+		if data1.my_need_blocks > 0:
+			efficiency1 = round(data1.my_blocks/data1.my_need_blocks*100, 2)
+		if data2.my_need_blocks > 0:
+			efficiency2 = round(data2.my_blocks/data2.my_need_blocks*100, 2)
+		if data3.my_need_blocks > 0:
+			efficiency3 = round(data3.my_blocks/data3.my_need_blocks*100, 2)
+		return [efficiency1, efficiency2, efficiency3]
 	#end define
 
 	def GetDbUsage(self):

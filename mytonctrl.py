@@ -257,9 +257,11 @@ def PrintStatus(args):
 	totalValidators = config34["totalValidators"]
 	onlineValidators = None
 	validatorEfficiency = None
+	validatorEfficiency2 = None
 	if opt != "fast":
 		onlineValidators = ton.GetOnlineValidators()
 		validatorEfficiency = ton.GetValidatorEfficiency()
+		validatorEfficiency2 = ton.GetValidatorEfficiency2()
 	if onlineValidators:
 		onlineValidators = len(onlineValidators)
 	oldStartWorkTime = config36.get("startWorkTime")
@@ -290,7 +292,7 @@ def PrintStatus(args):
 	else:
 		validatorAccount = None
 	PrintTonStatus(startWorkTime, totalValidators, onlineValidators, shardsNumber, offersNumber, complaintsNumber, tpsAvg)
-	PrintLocalStatus(adnlAddr, validatorIndex, validatorEfficiency, validatorWallet, validatorAccount, validatorStatus, dbSize, dbUsage, memoryInfo, swapInfo, netLoadAvg, disksLoadAvg, disksLoadPercentAvg)
+	PrintLocalStatus(adnlAddr, validatorIndex, validatorEfficiency, validatorEfficiency2, validatorWallet, validatorAccount, validatorStatus, dbSize, dbUsage, memoryInfo, swapInfo, netLoadAvg, disksLoadAvg, disksLoadPercentAvg)
 	PrintTonConfig(fullConfigAddr, fullElectorAddr, config15, config17)
 	PrintTimes(rootWorkchainEnabledTime_int, startWorkTime, oldStartWorkTime, config15)
 #end define
@@ -335,7 +337,7 @@ def PrintTonStatus(startWorkTime, totalValidators, onlineValidators, shardsNumbe
 	print()
 #end define
 
-def PrintLocalStatus(adnlAddr, validatorIndex, validatorEfficiency, validatorWallet, validatorAccount, validatorStatus, dbSize, dbUsage, memoryInfo, swapInfo, netLoadAvg, disksLoadAvg, disksLoadPercentAvg):
+def PrintLocalStatus(adnlAddr, validatorIndex, validatorEfficiency, validatorEfficiency2, validatorWallet, validatorAccount, validatorStatus, dbSize, dbUsage, memoryInfo, swapInfo, netLoadAvg, disksLoadAvg, disksLoadPercentAvg):
 	if validatorWallet is None:
 		return
 	walletAddr = validatorWallet.addrB64
@@ -354,6 +356,8 @@ def PrintLocalStatus(adnlAddr, validatorIndex, validatorEfficiency, validatorWal
 	validatorIndex_text = local.translate("local_status_validator_index").format(validatorIndex_text)
 	validatorEfficiency_text = GetColorInt(validatorEfficiency, 10, logic="more", ending=" %")
 	validatorEfficiency_text = local.translate("local_status_validator_efficiency").format(validatorEfficiency_text)
+	validatorEfficiency2_text = f"{bcolors.cyan}{validatorEfficiency2}{bcolors.endc}"
+	validatorEfficiency2_text = local.translate("local_status_validator_efficiency_ver2").format(validatorEfficiency2_text)
 	adnlAddr_text = local.translate("local_status_adnl_addr").format(bcolors.yellow_text(adnlAddr))
 	walletAddr_text = local.translate("local_status_wallet_addr").format(bcolors.yellow_text(walletAddr))
 	walletBalance_text = local.translate("local_status_wallet_balance").format(bcolors.green_text(walletBalance))
@@ -436,6 +440,7 @@ def PrintLocalStatus(adnlAddr, validatorIndex, validatorEfficiency, validatorWal
 	color_print(local.translate("local_status_head"))
 	print(validatorIndex_text)
 	print(validatorEfficiency_text)
+	print(validatorEfficiency2_text)
 	print(adnlAddr_text)
 	print(walletAddr_text)
 	print(walletBalance_text)
