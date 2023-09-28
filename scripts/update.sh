@@ -39,6 +39,21 @@ rm -rf ${srcdir}/${repo}
 echo "https://github.com/${author}/${repo}.git -> ${branch}"
 git clone --recursive https://github.com/${author}/${repo}.git
 cd ${repo} && git checkout ${branch} && git submodule update --init --recursive
+
+# Установка нового кода
+if [ -f "$SOURCES_DIR/mytonctrl/setup.py" ]; then
+	# edit /usr/bin/mytonctrl
+	cd $SOURCES_DIR/mytonctrl && pip3 install -U .
+	echo "python3 -m mytonctrl" > /usr/bin/mytonctrl
+	
+	#edit mytoncore.service
+	mpath="/etc/systemd/system/mytoncore.service"
+	tpath="$mpath".tmp
+	awk '{sub("/usr/src/mytonctrl/mytoncore.py","-m mytoncore")} {print}' $mpath > $tpath
+	mv $tpath $mpath
+	systemctl daemon-reload
+fi
+
 systemctl restart mytoncore
 
 # Конец
