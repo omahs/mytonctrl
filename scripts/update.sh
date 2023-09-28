@@ -41,9 +41,9 @@ git clone --recursive https://github.com/${author}/${repo}.git
 cd ${repo} && git checkout ${branch} && git submodule update --init --recursive
 
 # Установка нового кода
-if [ -f "$SOURCES_DIR/mytonctrl/setup.py" ]; then
+if [ -f "/usr/src/mytonctrl/setup.py" ]; then
 	# edit /usr/bin/mytonctrl
-	cd $SOURCES_DIR/mytonctrl && pip3 install -U .
+	cd /usr/src/mytonctrl && pip3 install -U .
 	echo "python3 -m mytonctrl" > /usr/bin/mytonctrl
 	
 	#edit mytoncore.service
