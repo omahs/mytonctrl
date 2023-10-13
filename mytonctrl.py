@@ -1186,8 +1186,11 @@ def PrintControllersList(args):
 	using_controllers = ton.GetSettings("using_controllers")
 	old_controllers = ton.GetSettings("old_controllers")
 	user_controllers_list = ton.GetSettings("user_controllers_list")
-	print("using controllers:")
-	PrintControllersListProcess(using_controllers)
+	if using_controllers == None or len(using_controllers) == 0:
+		print("No using controllers. Use new_controllers command")
+	else:
+		print("using controllers:")
+		PrintControllersListProcess(using_controllers)
 	if new_controllers != using_controllers:
 		print()
 		print("new controllers:")
