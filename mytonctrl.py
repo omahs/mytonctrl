@@ -17,6 +17,7 @@ def Init(argv):
 	# Create user console
 	console.name = "MyTonCtrl"
 	console.startFunction = PreUp
+	console.debug = ton.GetSettings("debug")
 
 	console.AddItem("update", Update, local.Translate("update_cmd"))
 	console.AddItem("upgrade", Upgrade, local.Translate("upgrade_cmd"))
