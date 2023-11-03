@@ -395,7 +395,7 @@ def FirstMytoncoreSettings():
 	subprocess.run(args)
 
 	# start mytoncore
-	StartMytoncore()
+	start_service("mytoncore")
 #end define
 
 def EnableValidatorConsole():
@@ -491,7 +491,7 @@ def EnableValidatorConsole():
 	subprocess.run(args)
 
 	# restart mytoncore
-	StartMytoncore()
+	start_service("mytoncore")
 #end define
 
 def EnableLiteServer():
@@ -578,7 +578,7 @@ def EnableLiteServer():
 	SetConfig(path=mconfig_path, data=mconfig)
 
 	# restart mytoncore
-	StartMytoncore()
+	start_service("mytoncore")
 #end define
 
 def StartValidator():
@@ -592,10 +592,9 @@ def StartValidator():
 	time.sleep(10)
 #end define
 
-def StartMytoncore():
-	# restart mytoncore
-	local.add_log("Start/restart mytoncore service", "debug")
-	args = ["systemctl", "restart", "mytoncore"]
+def start_service(name):
+	local.add_log(f"Start/restart {name} service", "debug")
+	args = ["systemctl", "restart", name]
 	subprocess.run(args)
 #end define
 
@@ -657,7 +656,7 @@ def GetPortsFromVconfig():
 	SetConfig(path=mconfig_path, data=mconfig)
 
 	# restart mytoncore
-	StartMytoncore()
+	start_service("mytoncore")
 #end define
 
 def DangerousRecoveryValidatorConfigFile():
@@ -971,6 +970,64 @@ def EnableDhtServer():
 	# start DHT-Server
 	args = ["systemctl", "restart", "dht-server"]
 	subprocess.run(args)
+#end define
+
+def FirstStorageSettings():
+	local.add_log("start FirstStorageSettings fuction", "debug")
+	
+	# Создать переменные
+	user = "ton-storage"
+	service_name = "ton-storage"
+	storage_app_path = "/usr/bin/ton/storage/storage-daemon/storage-daemon"
+	global_config_path = "/var/ton-storage/global.config.json"
+	db_dir = "/var/ton-storage/db"
+	cli_key = "/var/ton-storage/db/cli-keys/client"
+	cli_pubkey = "/var/ton-storage/db/cli-keys/server.pub"
+	
+	# Создать пользователя
+	file = open("/etc/passwd", 'rt')
+	text = file.read()
+	file.close()
+	if user not in text:
+		local.add_log("Creating new user: " + user, "debug")
+		args = ["/usr/sbin/useradd", "-d", "/dev/null", "-s", "/dev/null", user]
+		subprocess.run(args)
+	#end if
+	
+	# Получить внешний ip адрес
+	ip = get_own_ip()
+	port = random.randint(2000, 65000)
+	cport = random.randint(2000, 65000)
+	addr = f"{ip}:{port}"
+	local.add_log("Use addr: " + addr, "debug")
+	
+	# Прописать автозагрузку
+	cmd = f"{storage_app_path} --global-config {global_config_path} --ip {addr} --control-port {cport} --db {db_dir} --storage-provider --verbosity 1"
+	add2systemd(name=service_name, user=vuser, start=cmd)
+	
+	start_service(service_name)
+	
+	# edit mytoncore config file
+	# read mconfig
+	local.add_log("read mconfig", "debug")
+	mconfig_path = local.buffer.mconfig_path
+	mconfig = GetConfig(path=mconfig_path)
+	
+	# edit mytoncore config file
+	local.add_log("edit mytoncore config file", "debug")
+	ton_storage = Dict()
+	ton_storage.ip = ip
+	ton_storage.port = port
+	ton_storage.cli = Dict()
+	ton_storage.cli.key = cli_key
+	ton_storage.cli.pubkey = cli_pubkey
+	ton_storage.cli.ip = "127.0.0.1"
+	ton_storage.cli.port = cport
+	mconfig.ton_storage = ton_storage
+
+	# write mconfig
+	local.add_log("write mconfig", "debug")
+	SetConfig(path=mconfig_path, data=mconfig)
 #end define
 
 def SetWebPassword(args):
