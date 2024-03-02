@@ -1568,9 +1568,9 @@ class MyTonCore():
 		self.local.add_log("start RecoverStake function", "debug")
 		fullElectorAddr = self.GetFullElectorAddr()
 		returnedStake = self.GetReturnedStake(fullElectorAddr, wallet.addrB64)
-		if returnedStake == 0:
-			self.local.add_log("You have nothing on the return stake", "debug")
-			return
+		#if returnedStake == 0:
+		#	self.local.add_log("You have nothing on the return stake", "debug")
+		#	return
 		#end if
 
 		resultFilePath = self.ProcessRecoverStake()
