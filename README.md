@@ -84,7 +84,7 @@ MyTonCtrl is a console application that serves as a convenient wrapper for `fift
 - `mytoninstaller.py`: configures the validator and `mytonctrl`; generates validator connection keys.
 
 ## Installation modes
-There are two installation modes: `lite` and`full`. They both **compile** and install `TON` components. However the `lite` version does not configure or run the node/validator.
+There are two installation modes: `lite` and `full`. They both **compile** and install `TON` components. However the `lite` version does not configure or run the node/validator.
 
 ## Installation for Ubuntu
 1. Download and execute the `install.sh` script in the desired installation mode. During installation the script prompts you for the superuser password several times.
